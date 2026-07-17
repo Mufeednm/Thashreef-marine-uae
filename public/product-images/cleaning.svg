@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640" role="img" aria-labelledby="title">
+  <title id="title">Marine cleaning brush product artwork</title>
+  <rect width="640" height="640" fill="#f7fafc"/>
+  <path d="M398 108 182 324" stroke="#102846" stroke-width="32" stroke-linecap="round"/>
+  <rect x="138" y="312" width="292" height="116" rx="32" fill="#f97316" stroke="#102846" stroke-width="16" transform="rotate(-18 284 370)"/>
+  <path d="M198 414v76M250 397v92M302 381v108M354 364v92" stroke="#64748b" stroke-width="18" stroke-linecap="round"/>
+  <path d="M448 132h84M476 104v84" stroke="#0e568f" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="122" cy="188" r="28" fill="#dbeafe"/>
+</svg>

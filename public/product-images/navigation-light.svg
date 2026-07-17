@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640" role="img" aria-labelledby="title">
+  <title id="title">Port and starboard navigation lights product artwork</title>
+  <rect width="640" height="640" fill="#f6fafc"/>
+  <path d="M142 274c0-59 48-107 107-107h142c59 0 107 48 107 107v154H142V274Z" fill="#102846"/>
+  <rect x="176" y="428" width="288" height="56" rx="18" fill="#334155"/>
+  <path d="M198 276c0-28 23-51 51-51h40v141h-91v-90Z" fill="#dc2626"/>
+  <path d="M351 225h40c28 0 51 23 51 51v90h-91V225Z" fill="#16a34a"/>
+  <path d="M320 124v84M246 132l34 75M394 132l-34 75" stroke="#f97316" stroke-width="18" stroke-linecap="round"/>
+</svg>

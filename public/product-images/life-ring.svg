@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640" role="img" aria-labelledby="title">
+  <title id="title">Marine life ring product artwork</title>
+  <rect width="640" height="640" fill="#f7fafc"/>
+  <circle cx="320" cy="320" r="218" fill="#f97316"/>
+  <circle cx="320" cy="320" r="128" fill="#f7fafc"/>
+  <path d="M230 126 279 244M410 126 361 244M230 514 279 396M410 514 361 396" stroke="#fff" stroke-width="46" stroke-linecap="round"/>
+  <path d="M121 320h118M401 320h118" stroke="#fff" stroke-width="46" stroke-linecap="round"/>
+  <circle cx="320" cy="320" r="218" fill="none" stroke="#102846" stroke-width="20"/>
+  <circle cx="320" cy="320" r="128" fill="none" stroke="#102846" stroke-width="14"/>
+</svg>

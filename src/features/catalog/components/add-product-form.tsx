@@ -1,0 +1,215 @@
+"use client";
+
+import type { ReactElement } from "react";
+import { useActionState } from "react";
+import type { Category } from "@/domain/catalog/category";
+import { createProductAction } from "@/features/catalog/catalog.actions";
+import {
+  initialCreateProductActionState,
+  type CreateProductActionState,
+} from "@/features/catalog/catalog.types";
+
+interface AddProductFormProps {
+  categories: Category[];
+}
+
+export function AddProductForm({ categories }: AddProductFormProps): ReactElement {
+  const [state, action, pending] = useActionState<CreateProductActionState, FormData>(
+    createProductAction,
+    initialCreateProductActionState,
+  );
+
+  return (
+    <form action={action} className="space-y-8">
+      <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-bold tracking-[0.24em] text-[#f05a28] uppercase">
+              Product setup
+            </p>
+            <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-[#102846]">
+              Create a new catalog product
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              Build the product in clear steps: assign the catalog basics first, then set pricing
+              and stock details. This writes directly into the local SQLite catalog.
+            </p>
+          </div>
+          <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            {categories.length} categories available
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
+        <div className="border-b border-slate-100 pb-4">
+          <h3 className="text-lg font-bold text-[#102846]">1. Product identity</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Name the product, choose the category, and describe what customers are buying.
+          </p>
+        </div>
+
+        <div className="mt-6 grid gap-5 lg:grid-cols-2">
+          <Field
+            error={state.fieldErrors?.name?.[0]}
+            label="Product name"
+            name="name"
+            placeholder="Victron Blue Smart Charger 12V 15A"
+          />
+          <Field
+            error={state.fieldErrors?.brand?.[0]}
+            label="Brand"
+            name="brand"
+            placeholder="Victron Energy"
+          />
+          <Field
+            error={state.fieldErrors?.sku?.[0]}
+            label="SKU"
+            name="sku"
+            placeholder="VIC-BSC-1215"
+          />
+          <SelectField
+            categories={categories}
+            error={state.fieldErrors?.categoryId?.[0]}
+            name="categoryId"
+          />
+        </div>
+
+        <div className="mt-5">
+          <label className="block space-y-2">
+            <span className="text-sm font-semibold text-slate-700">Description</span>
+            <textarea
+              className="min-h-36 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0e568f] focus:bg-white"
+              name="description"
+              placeholder="Short, useful product summary with marine-specific details and compatibility notes."
+            />
+            {state.fieldErrors?.description?.[0] ? (
+              <p className="text-sm text-rose-600">{state.fieldErrors.description[0]}</p>
+            ) : null}
+          </label>
+        </div>
+      </section>
+
+      <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
+        <div className="border-b border-slate-100 pb-4">
+          <h3 className="text-lg font-bold text-[#102846]">2. Pricing and inventory</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Set the regular price, optional sale price, available stock, and image override.
+          </p>
+        </div>
+
+        <div className="mt-6 grid gap-5 lg:grid-cols-2">
+          <Field
+            error={state.fieldErrors?.regularPriceAed?.[0]}
+            inputMode="decimal"
+            label="Regular price (AED)"
+            name="regularPriceAed"
+            placeholder="895.00"
+          />
+          <Field
+            error={state.fieldErrors?.salePriceAed?.[0]}
+            inputMode="decimal"
+            label="Sale price (AED)"
+            name="salePriceAed"
+            placeholder="820.00"
+          />
+          <Field
+            error={state.fieldErrors?.stockQuantity?.[0]}
+            inputMode="numeric"
+            label="Stock quantity"
+            name="stockQuantity"
+            placeholder="24"
+          />
+          <Field
+            error={state.fieldErrors?.imageUrl?.[0]}
+            label="Image URL override"
+            name="imageUrl"
+            placeholder="/product-images/battery.svg"
+          />
+        </div>
+      </section>
+
+      {state.message ? (
+        <section
+          className={`rounded-2xl border px-4 py-4 text-sm ${
+            state.status === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              : "border-rose-200 bg-rose-50 text-rose-700"
+          }`}
+        >
+          {state.message}
+        </section>
+      ) : null}
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+        <button
+          className="min-h-12 rounded-2xl bg-[#f05a28] px-6 text-sm font-extrabold text-white transition hover:bg-[#d94d20] disabled:cursor-not-allowed disabled:bg-slate-300"
+          disabled={pending}
+          type="submit"
+        >
+          {pending ? "Saving product..." : "Save product"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+interface FieldProps {
+  error?: string;
+  inputMode?: "decimal" | "numeric" | "text";
+  label: string;
+  name: string;
+  placeholder: string;
+}
+
+function Field({
+  error,
+  inputMode = "text",
+  label,
+  name,
+  placeholder,
+}: FieldProps): ReactElement {
+  return (
+    <label className="block space-y-2">
+      <span className="text-sm font-semibold text-slate-700">{label}</span>
+      <input
+        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0e568f] focus:bg-white"
+        inputMode={inputMode}
+        name={name}
+        placeholder={placeholder}
+      />
+      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+    </label>
+  );
+}
+
+function SelectField({
+  categories,
+  error,
+  name,
+}: {
+  categories: Category[];
+  error?: string;
+  name: string;
+}): ReactElement {
+  return (
+    <label className="block space-y-2">
+      <span className="text-sm font-semibold text-slate-700">Category</span>
+      <select
+        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#0e568f] focus:bg-white"
+        defaultValue=""
+        name={name}
+      >
+        <option disabled value="">
+          Select a category
+        </option>
+        {categories.map((category) => (
+          <option key={category.id} value={category.id}>
+            {category.parentCategoryId ? `- ${category.name}` : category.name}
+          </option>
+        ))}
+      </select>
+      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+    </label>
+  );
+}

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640" role="img" aria-labelledby="title">
+  <title id="title">White boat fender product artwork</title>
+  <rect width="640" height="640" fill="#f7fafc"/>
+  <path d="M248 90h144c33 0 60 27 60 60v340c0 33-27 60-60 60H248c-33 0-60-27-60-60V150c0-33 27-60 60-60Z" fill="#e2e8f0" stroke="#102846" stroke-width="18"/>
+  <path d="M232 188h176M232 452h176" stroke="#94a3b8" stroke-width="26" stroke-linecap="round"/>
+  <circle cx="320" cy="140" r="21" fill="#f7fafc" stroke="#102846" stroke-width="12"/>
+  <circle cx="320" cy="500" r="21" fill="#f7fafc" stroke="#102846" stroke-width="12"/>
+  <path d="M470 168c52 42 78 93 78 152s-26 110-78 152" fill="none" stroke="#f97316" stroke-width="18" stroke-linecap="round"/>
+</svg>

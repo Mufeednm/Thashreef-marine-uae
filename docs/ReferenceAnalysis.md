@@ -2,6 +2,8 @@
 
 ## Reference
 
+Reference website: [https://rimalmarine.ae/](https://rimalmarine.ae/)
+
 Rimal Marine (`rimalmarine.ae`) was reviewed on 2026-07-14 as a functional reference only. This project must use original copy, visual design, assets, data, and implementation.
 
 ## Business and catalog scope

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640" role="img" aria-labelledby="title">
+  <title id="title">General marine product artwork</title>
+  <rect width="640" height="640" fill="#f7fafc"/>
+  <path d="M126 410h388l-44 76H170l-44-76Z" fill="#102846"/>
+  <path d="M190 250h260l64 160H126l64-160Z" fill="#e2e8f0" stroke="#102846" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M242 250v-82h156v82" fill="#f97316" stroke="#102846" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M220 336h200" stroke="#0e568f" stroke-width="22" stroke-linecap="round"/>
+  <path d="M224 532c28 24 64 24 92 0 28 24 64 24 92 0" fill="none" stroke="#0e568f" stroke-width="18" stroke-linecap="round"/>
+</svg>

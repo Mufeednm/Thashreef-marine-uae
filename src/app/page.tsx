@@ -1,16 +1,34 @@
-export default function Home(): React.ReactElement {
+import type { ReactElement } from "react";
+import { redirect } from "next/navigation";
+import {
+  listCatalogBrands,
+  listCatalogCategoryTree,
+  listCatalogProducts,
+} from "@/application/catalog/catalog-service";
+import { restoreSessionUser } from "@/application/auth/auth-service";
+import { StorefrontExperience } from "@/features/storefront/components/storefront-experience";
+import { readSessionUser } from "@/infrastructure/auth/session-cookie";
+import { createDemoStoreRepository } from "@/infrastructure/demo-store/file-demo-store-repository";
+
+export default async function Home(): Promise<ReactElement> {
+  const repository = createDemoStoreRepository();
+  const sessionUser = await restoreSessionUser(repository, await readSessionUser());
+  const [brands, categoryTree, products] = await Promise.all([
+    listCatalogBrands(repository),
+    listCatalogCategoryTree(repository),
+    listCatalogProducts(repository),
+  ]);
+
+  if (sessionUser?.role === "admin" || sessionUser?.role === "staff") {
+    redirect("/admin");
+  }
+
   return (
-    <main className="flex flex-1 items-center justify-center bg-zinc-50 p-8">
-      <section className="max-w-xl space-y-4 text-center">
-        <p className="text-sm font-medium tracking-[0.2em] text-zinc-500 uppercase">
-          Foundation ready
-        </p>
-        <h1 className="text-4xl font-semibold tracking-tight text-zinc-950">Akbar E-Commerce</h1>
-        <p className="text-zinc-600">
-          The production-ready platform foundation is in place. The first feature milestone can now
-          begin.
-        </p>
-      </section>
-    </main>
+    <StorefrontExperience
+      accountName={sessionUser?.role === "customer" ? sessionUser.name : undefined}
+      brands={brands}
+      categoryTree={categoryTree}
+      products={products}
+    />
   );
 }

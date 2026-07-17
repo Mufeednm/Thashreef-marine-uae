@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640" role="img" aria-labelledby="title">
+  <title id="title">Marine boarding ladder product artwork</title>
+  <rect width="640" height="640" fill="#f6fafc"/>
+  <path d="M240 110v420M400 110v420" stroke="#102846" stroke-width="28" stroke-linecap="round"/>
+  <path d="M240 178h160M240 266h160M240 354h160M240 442h160" stroke="#94a3b8" stroke-width="24" stroke-linecap="round"/>
+  <path d="M190 532h260" stroke="#f97316" stroke-width="24" stroke-linecap="round"/>
+  <path d="M210 114c0-44 36-80 80-80h60c44 0 80 36 80 80" fill="none" stroke="#0e568f" stroke-width="20" stroke-linecap="round"/>
+</svg>

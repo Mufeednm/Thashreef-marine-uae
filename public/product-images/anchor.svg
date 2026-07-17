@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640" role="img" aria-labelledby="title">
+  <title id="title">Galvanized boat anchor product artwork</title>
+  <rect width="640" height="640" fill="#f5f8fb"/>
+  <circle cx="320" cy="114" r="48" fill="none" stroke="#102846" stroke-width="24"/>
+  <path d="M320 162v286" stroke="#102846" stroke-width="30" stroke-linecap="round"/>
+  <path d="M220 244h200" stroke="#102846" stroke-width="26" stroke-linecap="round"/>
+  <path d="M168 372c0 92 68 158 152 158s152-66 152-158" fill="none" stroke="#64748b" stroke-width="30" stroke-linecap="round"/>
+  <path d="M128 386l64-48 22 76M512 386l-64-48-22 76" fill="#64748b"/>
+  <path d="M276 448h88" stroke="#102846" stroke-width="26" stroke-linecap="round"/>
+</svg>

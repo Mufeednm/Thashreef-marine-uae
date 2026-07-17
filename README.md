@@ -1,6 +1,22 @@
-# Thashreef-marine-uae
+# Thashreef-marine-uae E-Commerce
 
 Production-oriented e-commerce platform foundation built with Next.js App Router, TypeScript, Tailwind CSS, Sequelize, MySQL, and Zod.
+
+## Local demo
+
+The current local testing console is branded as `Thashreef-marine-uae`. It includes:
+
+- cookie-based local login backed by a SQLite database in `data/akbar-marine.sqlite`
+- versioned SQLite catalog seeding for marine-only brands, main categories, subcategories, optional child categories, and products
+- page-based admin routes at `/admin`, `/admin/products`, `/admin/products/new`, and `/admin/categories`
+- admin category creation with many custom fields per category
+- a public `/` storefront redesigned as a dense premium marine accessories marketplace with dynamic database-backed main-category navigation, hover mega menus for subcategories, accessory-led hero carousel, category image cards, promotional banners, six product rails, brand carousel, testimonials, gallery, newsletter, quick product views, and an interactive local cart
+
+### Demo credentials
+
+- Admin: `admin` / `admin123`
+- Staff: `staff` / `Staff@123`
+- Customer: `user` / `userpassword`
 
 ## Prerequisites
 
