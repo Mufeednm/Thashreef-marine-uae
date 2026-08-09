@@ -1,4 +1,5 @@
 import "server-only";
+import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { Sequelize } from "sequelize";
 
@@ -9,10 +10,13 @@ export function getDatabaseConnection(): Sequelize {
     return sequelize;
   }
 
+  const databasePath = path.join(process.cwd(), "data", "akbar-marine.sqlite");
+  mkdirSync(path.dirname(databasePath), { recursive: true });
+
   sequelize = new Sequelize({
     dialect: "sqlite",
     logging: false,
-    storage: path.join(process.cwd(), "data", "akbar-marine.sqlite"),
+    storage: databasePath,
   });
 
   return sequelize;

@@ -13,6 +13,8 @@ import type {
   AdminRecentOrder,
   Brand,
   DemoStoreRepository,
+  HomepageBanner,
+  PersistedCategoryInput,
   PersistedProductInput,
 } from "@/domain/demo-store/demo-store-repository";
 import { getDatabaseConnection } from "@/infrastructure/database/sequelize";
@@ -47,6 +49,23 @@ export function createDemoStoreRepository(): DemoStoreRepository {
 }
 
 class SqliteDemoStoreRepository implements DemoStoreRepository {
+  async addBrand(input: Omit<Brand, "id">): Promise<Brand> {
+    await ensureDatabase();
+    const database = getDatabaseConnection();
+    await database.query(
+      `INSERT INTO brands (name, slug, logo_text, display_order)
+       VALUES (:name, :slug, :logoText, :displayOrder)`,
+      { replacements: { ...input, name: input.name.trim(), logoText: input.logoText.trim() } },
+    );
+    const [brand] = await database.query<Brand>(
+      `SELECT id, name, slug, logo_text AS logoText, display_order AS displayOrder
+       FROM brands WHERE slug = :slug LIMIT 1`,
+      { replacements: { slug: input.slug }, type: QueryTypes.SELECT },
+    );
+    if (!brand) throw new Error("Brand was not created.");
+    return brand;
+  }
+
   async addProduct(input: PersistedProductInput): Promise<Product> {
     await ensureDatabase();
 
@@ -78,10 +97,15 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
       createdByUserId: input.createdByUserId,
       description: input.description.trim(),
       hasVariants: false,
+      homepageOrder: input.homepageOrder ?? 0,
       id: input.id,
       imageUrl: input.imageUrl?.trim() || resolveProductImageUrl(category[0].name, input.name),
       isActive: true,
-      isFeatured: false,
+      isFeatured: input.isFeatured ?? false,
+      isNewArrival: input.isNewArrival ?? true,
+      isTopSelling: input.isTopSelling ?? false,
+      isBestDeal: input.isBestDeal ?? false,
+      isBannerProduct: input.isBannerProduct ?? false,
       name: input.name.trim(),
       priceAedCents: effectivePrice,
       regularPriceAedCents: input.regularPriceAedCents,
@@ -96,11 +120,11 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
       `INSERT INTO products (
          id, external_id, name, slug, sku, brand, category, category_id, description,
          image_url, secondary_image_url, regular_price_aed_cents, sale_price_aed_cents,
-         price_aed_cents, has_variants, is_featured, is_active, stock_quantity, created_at, created_by_user_id
+         price_aed_cents, has_variants, is_featured, is_new_arrival, is_top_selling, is_best_deal, is_banner_product, homepage_order, is_active, stock_quantity, created_at, created_by_user_id
        ) VALUES (
          :id, NULL, :name, :slug, :sku, :brand, :category, :categoryId, :description,
          :imageUrl, :secondaryImageUrl, :regularPriceAedCents, :salePriceAedCents,
-         :priceAedCents, :hasVariants, :isFeatured, :isActive, :stockQuantity, :createdAt, :createdByUserId
+         :priceAedCents, :hasVariants, :isFeatured, :isNewArrival, :isTopSelling, :isBestDeal, :isBannerProduct, :homepageOrder, :isActive, :stockQuantity, :createdAt, :createdByUserId
        )`,
       {
         replacements: {
@@ -108,6 +132,10 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
           hasVariants: product.hasVariants ? 1 : 0,
           isActive: product.isActive ? 1 : 0,
           isFeatured: product.isFeatured ? 1 : 0,
+          isNewArrival: product.isNewArrival ? 1 : 0,
+          isTopSelling: product.isTopSelling ? 1 : 0,
+          isBestDeal: product.isBestDeal ? 1 : 0,
+          isBannerProduct: product.isBannerProduct ? 1 : 0,
         },
       },
     );
@@ -120,6 +148,8 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     displayOrder: number;
     fieldLabels: string[];
     isFeatured: boolean;
+    showOnHomepage?: boolean;
+    homepageOrder?: number;
     name: string;
     parentCategoryId?: number | null;
     slug: string;
@@ -128,15 +158,17 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
 
     await getDatabaseConnection().query(
       `INSERT INTO categories (
-         name, slug, parent_category_id, banner_image_url, is_featured, display_order
+         name, slug, parent_category_id, banner_image_url, is_featured, show_on_homepage, homepage_order, display_order
        ) VALUES (
-         :name, :slug, :parentCategoryId, :bannerImageUrl, :isFeatured, :displayOrder
+         :name, :slug, :parentCategoryId, :bannerImageUrl, :isFeatured, :showOnHomepage, :homepageOrder, :displayOrder
        )`,
       {
         replacements: {
           bannerImageUrl: input.bannerImageUrl?.trim() || null,
           displayOrder: input.displayOrder,
           isFeatured: input.isFeatured ? 1 : 0,
+          showOnHomepage: input.showOnHomepage ?? input.isFeatured ? 1 : 0,
+          homepageOrder: input.homepageOrder ?? input.displayOrder,
           name: input.name.trim(),
           parentCategoryId: input.parentCategoryId ?? null,
           slug: input.slug,
@@ -152,6 +184,8 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
          parent_category_id AS parentCategoryId,
          banner_image_url AS bannerImageUrl,
          is_featured AS isFeatured,
+         show_on_homepage AS showOnHomepage,
+         homepage_order AS homepageOrder,
          display_order AS displayOrder
        FROM categories
        WHERE slug = :slug
@@ -166,7 +200,66 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     return {
       ...created,
       isFeatured: Boolean(created.isFeatured),
+      showOnHomepage: Boolean(created.showOnHomepage),
     };
+  }
+
+  async deleteBrand(id: number): Promise<void> {
+    await ensureDatabase();
+    await getDatabaseConnection().query("DELETE FROM brands WHERE id = :id", { replacements: { id } });
+  }
+
+  async deleteCategory(id: number): Promise<void> {
+    await ensureDatabase();
+    const database = getDatabaseConnection();
+    await database.query("DELETE FROM category_fields WHERE category_id = :id", { replacements: { id } });
+    await database.query("DELETE FROM categories WHERE id = :id", { replacements: { id } });
+  }
+
+  async updateBrand(id: number, input: Omit<Brand, "id" | "slug">): Promise<Brand | null> {
+    await ensureDatabase();
+    const database = getDatabaseConnection();
+    const [existing] = await database.query<Brand>(
+      "SELECT id, name, slug, logo_text AS logoText, display_order AS displayOrder FROM brands WHERE id = :id LIMIT 1",
+      { replacements: { id }, type: QueryTypes.SELECT },
+    );
+    if (!existing) return null;
+    await database.query(
+      `UPDATE brands SET name = :name, logo_text = :logoText, display_order = :displayOrder WHERE id = :id`,
+      { replacements: { id, name: input.name.trim(), logoText: input.logoText.trim(), displayOrder: input.displayOrder } },
+    );
+    if (existing.name !== input.name.trim()) {
+      await database.query("UPDATE products SET brand = :name WHERE brand = :previousName", {
+        replacements: { name: input.name.trim(), previousName: existing.name },
+      });
+    }
+    return { ...existing, name: input.name.trim(), logoText: input.logoText.trim(), displayOrder: input.displayOrder };
+  }
+
+  async updateCategory(
+    id: number,
+    input: Omit<PersistedCategoryInput, "slug" | "fieldLabels">,
+  ): Promise<Category | null> {
+    await ensureDatabase();
+    const database = getDatabaseConnection();
+    const [existing] = await database.query<Category>("SELECT id FROM categories WHERE id = :id LIMIT 1", {
+      replacements: { id }, type: QueryTypes.SELECT,
+    });
+    if (!existing) return null;
+    await database.query(
+      `UPDATE categories SET name = :name, parent_category_id = :parentCategoryId,
+       banner_image_url = :bannerImageUrl, is_featured = :isFeatured,
+       show_on_homepage = :showOnHomepage, homepage_order = :homepageOrder,
+       display_order = :displayOrder WHERE id = :id`,
+      { replacements: {
+        id, name: input.name.trim(), parentCategoryId: input.parentCategoryId ?? null,
+        bannerImageUrl: input.bannerImageUrl?.trim() || null, isFeatured: input.isFeatured ? 1 : 0,
+        showOnHomepage: input.showOnHomepage ? 1 : 0, homepageOrder: input.homepageOrder ?? 0,
+        displayOrder: input.displayOrder,
+      } },
+    );
+    const rows = await this.listCategories();
+    return rows.find((category) => category.id === id) ?? null;
   }
 
   async addCategoryField(input: {
@@ -283,6 +376,16 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     );
   }
 
+  async listHomepageBanners(): Promise<HomepageBanner[]> {
+    await ensureDatabase();
+    return getDatabaseConnection().query<HomepageBanner>(
+      `SELECT id, image_url AS imageUrl, title, subtitle, button_text AS buttonText,
+       button_link AS buttonLink, is_active AS isActive, sort_order AS sortOrder
+       FROM homepage_banners WHERE is_active = 1 ORDER BY sort_order, id`,
+      { type: QueryTypes.SELECT },
+    ).then((rows) => rows.map((row) => ({ ...row, isActive: Boolean(row.isActive) })));
+  }
+
   async listCategories(): Promise<Category[]> {
     await ensureDatabase();
 
@@ -294,6 +397,8 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
          parent_category_id AS parentCategoryId,
          banner_image_url AS bannerImageUrl,
          is_featured AS isFeatured,
+         show_on_homepage AS showOnHomepage,
+         homepage_order AS homepageOrder,
          display_order AS displayOrder
        FROM categories
        ORDER BY parent_category_id IS NOT NULL, display_order, name`,
@@ -302,6 +407,7 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
       rows.map((row) => ({
         ...row,
         isFeatured: Boolean(row.isFeatured),
+        showOnHomepage: Boolean(row.showOnHomepage),
       })),
     );
   }
@@ -351,6 +457,11 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
          p.price_aed_cents AS priceAedCents,
          p.has_variants AS hasVariants,
          p.is_featured AS isFeatured,
+         p.is_new_arrival AS isNewArrival,
+         p.is_top_selling AS isTopSelling,
+         p.is_best_deal AS isBestDeal,
+         p.is_banner_product AS isBannerProduct,
+         p.homepage_order AS homepageOrder,
          p.is_active AS isActive,
          p.stock_quantity AS stockQuantity,
          p.created_at AS createdAt,
@@ -366,6 +477,10 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
         hasVariants: Boolean(row.hasVariants),
         isActive: Boolean(row.isActive),
         isFeatured: Boolean(row.isFeatured),
+        isNewArrival: Boolean(row.isNewArrival),
+        isTopSelling: Boolean(row.isTopSelling),
+        isBestDeal: Boolean(row.isBestDeal),
+        isBannerProduct: Boolean(row.isBannerProduct),
       })),
     );
   }
@@ -444,6 +559,8 @@ async function initializeDatabase(): Promise<void> {
     parent_category_id INTEGER NULL,
     banner_image_url TEXT NULL,
     is_featured INTEGER NOT NULL DEFAULT 0,
+    show_on_homepage INTEGER NOT NULL DEFAULT 0,
+    homepage_order INTEGER NOT NULL DEFAULT 0,
     display_order INTEGER NOT NULL DEFAULT 0
   )`);
 
@@ -475,10 +592,26 @@ async function initializeDatabase(): Promise<void> {
     price_aed_cents INTEGER NOT NULL DEFAULT 0,
     has_variants INTEGER NOT NULL DEFAULT 0,
     is_featured INTEGER NOT NULL DEFAULT 0,
+    is_new_arrival INTEGER NOT NULL DEFAULT 0,
+    is_top_selling INTEGER NOT NULL DEFAULT 0,
+    is_best_deal INTEGER NOT NULL DEFAULT 0,
+    is_banner_product INTEGER NOT NULL DEFAULT 0,
+    homepage_order INTEGER NOT NULL DEFAULT 0,
     is_active INTEGER NOT NULL DEFAULT 1,
     stock_quantity INTEGER NOT NULL,
     created_at TEXT NOT NULL,
     created_by_user_id TEXT NOT NULL
+  )`);
+
+  await database.query(`CREATE TABLE IF NOT EXISTS homepage_banners (
+    id INTEGER PRIMARY KEY,
+    image_url TEXT NOT NULL,
+    title TEXT NOT NULL,
+    subtitle TEXT NOT NULL,
+    button_text TEXT NOT NULL,
+    button_link TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    sort_order INTEGER NOT NULL DEFAULT 0
   )`);
 
   await database.query(`CREATE TABLE IF NOT EXISTS product_variants (
@@ -536,6 +669,8 @@ async function initializeDatabase(): Promise<void> {
   )`);
 
   await ensureProductColumns();
+  await ensureCategoryColumns();
+  await seedHomepageBanners();
   await syncAuthUsers();
   await syncMarineCatalogSeed();
 }
@@ -576,12 +711,53 @@ async function ensureProductColumns(): Promise<void> {
       "ALTER TABLE products ADD COLUMN is_featured INTEGER NOT NULL DEFAULT 0",
     ],
     ["is_active", "ALTER TABLE products ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1"],
+    ["is_new_arrival", "ALTER TABLE products ADD COLUMN is_new_arrival INTEGER NOT NULL DEFAULT 0"],
+    ["is_top_selling", "ALTER TABLE products ADD COLUMN is_top_selling INTEGER NOT NULL DEFAULT 0"],
+    ["is_best_deal", "ALTER TABLE products ADD COLUMN is_best_deal INTEGER NOT NULL DEFAULT 0"],
+    ["is_banner_product", "ALTER TABLE products ADD COLUMN is_banner_product INTEGER NOT NULL DEFAULT 0"],
+    ["homepage_order", "ALTER TABLE products ADD COLUMN homepage_order INTEGER NOT NULL DEFAULT 0"],
   ] as const;
 
   for (const [name, statement] of additions) {
     if (!existing.has(name)) {
       await database.query(statement);
     }
+  }
+}
+
+async function ensureCategoryColumns(): Promise<void> {
+  const database = getDatabaseConnection();
+  const columns = await database.query<{ name: string }>("PRAGMA table_info(categories)", {
+    type: QueryTypes.SELECT,
+  });
+  const existing = new Set(columns.map((column) => column.name));
+  const additions = [
+    ["show_on_homepage", "ALTER TABLE categories ADD COLUMN show_on_homepage INTEGER NOT NULL DEFAULT 0"],
+    ["homepage_order", "ALTER TABLE categories ADD COLUMN homepage_order INTEGER NOT NULL DEFAULT 0"],
+  ] as const;
+  for (const [name, statement] of additions) {
+    if (!existing.has(name)) await database.query(statement);
+  }
+}
+
+async function seedHomepageBanners(): Promise<void> {
+  const database = getDatabaseConnection();
+  const [existing] = await database.query<{ count: number }>(
+    "SELECT COUNT(*) AS count FROM homepage_banners",
+    { type: QueryTypes.SELECT },
+  );
+  if (Number(existing?.count ?? 0) > 0) return;
+  const banners = [
+    ["/product-images/marine-essential.svg", "Ready for every mile at sea", "Marine parts, trusted brands, UAE delivery.", "Shop essentials", "#catalog", 1],
+    ["/product-images/life-jacket.svg", "Safety is never optional", "Professional life-saving equipment for every vessel.", "Explore safety", "#catalog", 2],
+    ["/product-images/battery.svg", "Power your next voyage", "Reliable electrical systems and onboard charging.", "Shop electrical", "#catalog", 3],
+  ] as const;
+  for (const [imageUrl, title, subtitle, buttonText, buttonLink, sortOrder] of banners) {
+    await database.query(
+      `INSERT INTO homepage_banners (image_url, title, subtitle, button_text, button_link, sort_order)
+       VALUES (:imageUrl, :title, :subtitle, :buttonText, :buttonLink, :sortOrder)`,
+      { replacements: { imageUrl, title, subtitle, buttonText, buttonLink, sortOrder } },
+    );
   }
 }
 

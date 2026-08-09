@@ -25,7 +25,7 @@ export default async function AdminCategoriesRoute(): Promise<ReactElement> {
 
   return (
     <AdminShell
-      description="Create standalone categories and define many custom fields for each category."
+      description="Create, edit, and safely remove categories while preserving the structured product taxonomy."
       eyebrow="Catalog"
       title="Categories"
     >

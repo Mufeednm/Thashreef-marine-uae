@@ -8,6 +8,7 @@ const navigation = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/products", label: "Products" },
   { href: "/admin/products/new", label: "Add Product" },
+  { href: "/admin/brands", label: "Brands" },
   { href: "/admin/categories", label: "Categories" },
 ] as const;
 

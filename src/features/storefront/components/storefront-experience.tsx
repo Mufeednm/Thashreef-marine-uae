@@ -6,13 +6,17 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactElement } from "react";
 import type { CategoryTreeNode } from "@/domain/catalog/category";
 import type { Product } from "@/domain/catalog/product";
-import type { Brand } from "@/domain/demo-store/demo-store-repository";
+import type { Brand, HomepageBanner } from "@/domain/demo-store/demo-store-repository";
 import { logoutAction } from "@/features/auth/auth.actions";
 import { LoginForm } from "@/features/auth/components/login-form";
+import { LanguageToggle } from "@/features/i18n/language-toggle";
+import { useLocale } from "@/features/i18n/locale-provider";
+import { CategoryNavigation } from "@/features/storefront/components/category-navigation";
 import { formatAedFromCents } from "@/shared/utils/currency";
 
 interface StorefrontExperienceProps {
   accountName?: string;
+  banners: HomepageBanner[];
   brands: Brand[];
   categoryTree: CategoryTreeNode[];
   products: Product[];
@@ -200,6 +204,7 @@ const testimonials = [
 
 export function StorefrontExperience({
   accountName,
+  banners,
   brands,
   categoryTree,
   products,
@@ -212,9 +217,32 @@ export function StorefrontExperience({
   const [cartOpen, setCartOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const slides = useMemo<HeroSlide[]>(
+    () =>
+      banners.length > 0
+        ? banners.map((banner) => ({
+            accent: "UAE marine supply, delivered with confidence",
+            cta: banner.buttonText,
+            description: banner.subtitle,
+            eyebrow: "Thashreef Marine UAE",
+            imageAlt: banner.title,
+            imageUrl: banner.imageUrl,
+            matcher: "all",
+            title: banner.title,
+          }))
+        : heroSlides,
+    [banners],
+  );
 
   const flatCategories = useMemo(() => flattenCategoryTree(categoryTree), [categoryTree]);
+  const assignedCategoryIds = useMemo(
+    () => new Set(products.map((product) => product.categoryId)),
+    [products],
+  );
+  const navigationCategoryTree = useMemo(
+    () => pruneEmptyCategoryBranches(categoryTree, assignedCategoryIds),
+    [assignedCategoryIds, categoryTree],
+  );
   const categoryLookup = useMemo(
     () => new Map(flatCategories.map((category) => [category.id, category])),
     [flatCategories],
@@ -230,6 +258,8 @@ export function StorefrontExperience({
 
     return new Set(getDescendantCategoryIds(categoryLookup.get(selectedCategoryId)));
   }, [categoryLookup, selectedCategoryId]);
+  const hasProductsInCategory = (categoryId: number): boolean =>
+    getDescendantCategoryIds(categoryLookup.get(categoryId)).some((id) => assignedCategoryIds.has(id));
   const brandNames = useMemo(
     () => (brands.length > 0 ? brands.map((brand) => brand.name) : Array.from(new Set(products.map((product) => product.brand)))).slice(0, 12),
     [brands, products],
@@ -252,14 +282,20 @@ export function StorefrontExperience({
     () => products.filter((product) => product.isFeatured).slice(0, 10),
     [products],
   );
+  const homepageCategories = useMemo(
+    () => flatCategories.filter((category) => category.showOnHomepage).sort((a, b) => a.homepageOrder - b.homepageOrder),
+    [flatCategories],
+  );
   const bestSellers = useMemo(
     () =>
-      [...products].sort((left, right) => right.stockQuantity - left.stockQuantity).slice(0, 10),
+      products.some((product) => product.isTopSelling)
+        ? products.filter((product) => product.isTopSelling).sort((a, b) => a.homepageOrder - b.homepageOrder).slice(0, 10)
+        : [...products].sort((left, right) => right.stockQuantity - left.stockQuantity).slice(0, 10),
     [products],
   );
   const newArrivals = useMemo(
     () =>
-      [...products]
+      (products.some((product) => product.isNewArrival) ? products.filter((product) => product.isNewArrival) : [...products])
         .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
         .slice(0, 10),
     [products],
@@ -282,7 +318,7 @@ export function StorefrontExperience({
   }, [brandNames, products]);
   const cartQuantity = cart.reduce((total, line) => total + line.quantity, 0);
   const cartTotal = cart.reduce((total, line) => total + line.priceAedCents * line.quantity, 0);
-  const slide = heroSlides[activeSlide];
+  const slide = slides[activeSlide % slides.length] ?? heroSlides[0];
 
   useEffect(() => {
     if (shouldReduceMotion) {
@@ -290,11 +326,15 @@ export function StorefrontExperience({
     }
 
     const interval = window.setInterval(() => {
-      setActiveSlide((current) => (current + 1) % heroSlides.length);
+      setActiveSlide((current) => (current + 1) % slides.length);
     }, 6200);
 
     return () => window.clearInterval(interval);
-  }, [shouldReduceMotion]);
+  }, [shouldReduceMotion, slides.length]);
+
+  useEffect(() => {
+    window.sessionStorage.setItem("thashreef-cart", JSON.stringify(cart));
+  }, [cart]);
 
   function addToCart(product: Product): void {
     setCart((lines) => {
@@ -318,7 +358,10 @@ export function StorefrontExperience({
   }
 
   function selectCategoryAndScroll(categoryId: number | "all"): void {
-    setSelectedCategoryId(categoryId);
+    const nextCategoryId =
+      categoryId === "all" || hasProductsInCategory(categoryId) ? categoryId : "all";
+    setQuery("");
+    setSelectedCategoryId(nextCategoryId);
     document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -344,7 +387,7 @@ export function StorefrontExperience({
       <Header
         accountName={accountName}
         cartQuantity={cartQuantity}
-        categoryTree={categoryTree}
+        categoryTree={navigationCategoryTree}
         openCart={() => setCartOpen(true)}
         openLogin={() => setLoginOpen(true)}
         openMobileMenu={() => setMobileMenuOpen(true)}
@@ -362,12 +405,28 @@ export function StorefrontExperience({
             selectDepartment={selectDepartment}
             setActiveSlide={setActiveSlide}
             slide={slide}
+            slideCount={slides.length}
           />
         </section>
 
         <TrustStrip />
 
         <CategoryCarousel selectDepartment={selectDepartment} />
+
+        {homepageCategories.map((category) => {
+          const ids = new Set(getDescendantCategoryIds(category));
+          const categoryProducts = products.filter((product) => ids.has(product.categoryId)).slice(0, 6);
+          return categoryProducts.length ? (
+            <ProductCarousel
+              addToCart={addToCart}
+              eyebrow="Featured category"
+              key={category.id}
+              products={categoryProducts}
+              subtitle={`Selected marine equipment from ${category.name}.`}
+              title={category.name}
+            />
+          ) : null;
+        })}
 
         <PromoBanner
           cta="Build a bulk order"
@@ -383,7 +442,6 @@ export function StorefrontExperience({
           addToCart={addToCart}
           eyebrow="Editor picks"
           products={featuredProducts.length > 0 ? featuredProducts : products.slice(0, 10)}
-          selectProduct={setSelectedProduct}
           subtitle="High-utility accessories with strong availability and polished product cards."
           title="Featured Products"
         />
@@ -391,7 +449,6 @@ export function StorefrontExperience({
           addToCart={addToCart}
           eyebrow="Fast movers"
           products={bestSellers}
-          selectProduct={setSelectedProduct}
           subtitle="Commonly needed items for retail counters, crews and service workshops."
           title="Best Sellers"
         />
@@ -399,7 +456,6 @@ export function StorefrontExperience({
           addToCart={addToCart}
           eyebrow="Fresh stock"
           products={newArrivals}
-          selectProduct={setSelectedProduct}
           subtitle="Recently synced products from the Thashreef Marine UAE catalogue."
           title="New Arrivals"
         />
@@ -410,7 +466,6 @@ export function StorefrontExperience({
           addToCart={addToCart}
           eyebrow="Trusted labels"
           products={topBrandProducts.length > 0 ? topBrandProducts : products.slice(0, 10)}
-          selectProduct={setSelectedProduct}
           subtitle="Product rails grouped around the brands customers already ask for."
           title="Top Brands"
         />
@@ -421,7 +476,6 @@ export function StorefrontExperience({
           addToCart={addToCart}
           eyebrow="Latest catalogue"
           products={recentlyAdded}
-          selectProduct={setSelectedProduct}
           subtitle="A quick rail for new or recently updated marine accessories."
           title="Recently Added"
         />
@@ -429,7 +483,6 @@ export function StorefrontExperience({
           addToCart={addToCart}
           eyebrow="Smart picks"
           products={recommendedProducts}
-          selectProduct={setSelectedProduct}
           subtitle="Balanced recommendations across safety, electrical, anchoring and daily accessories."
           title="Recommended for You"
         />
@@ -462,7 +515,7 @@ export function StorefrontExperience({
                   All products
                 </button>
                 {flatCategories
-                  .filter((category) => category.depth > 0)
+                  .filter((category) => category.depth > 0 && hasProductsInCategory(category.id))
                   .slice(0, 12)
                   .map((category) => (
                   <button
@@ -480,33 +533,24 @@ export function StorefrontExperience({
                 ))}
               </div>
             </div>
-            <motion.div
-              className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, margin: "-80px" }}
-              variants={{
-                hidden: {},
-                show: { transition: { staggerChildren: 0.045 } },
-              }}
-            >
-              {filteredProducts.slice(0, 15).map((product, index) => (
-                <motion.div
-                  key={product.id}
-                  variants={{
-                    hidden: { opacity: 0, y: 18 },
-                    show: { opacity: 1, y: 0 },
-                  }}
-                >
+            {filteredProducts.length > 0 ? (
+              <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                {filteredProducts.slice(0, 15).map((product, index) => (
                   <ProductCard
                     addToCart={addToCart}
                     index={index}
+                    key={product.id}
                     product={product}
-                    selectProduct={setSelectedProduct}
                   />
-                </motion.div>
-              ))}
-            </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-7 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+                <p className="font-bold text-[#0a2540]">No products match this selection yet.</p>
+                <p className="mt-2 text-sm text-slate-500">Choose All products or select another category to continue browsing.</p>
+                <button className="mt-5 min-h-11 rounded-full bg-[#0a2540] px-5 text-sm font-bold text-white" onClick={() => selectCategoryAndScroll("all")} type="button">Show all products</button>
+              </div>
+            )}
           </div>
         </section>
 
@@ -531,7 +575,7 @@ export function StorefrontExperience({
         {mobileMenuOpen ? (
           <MobileMenu
             accountName={accountName}
-            categoryTree={categoryTree}
+            categoryTree={navigationCategoryTree}
             close={() => setMobileMenuOpen(false)}
             openLogin={() => setLoginOpen(true)}
             selectedCategoryId={selectedCategoryId}
@@ -547,13 +591,6 @@ export function StorefrontExperience({
           />
         ) : null}
         {loginOpen ? <LoginModal close={() => setLoginOpen(false)} /> : null}
-        {selectedProduct ? (
-          <ProductDetail
-            addToCart={addToCart}
-            close={() => setSelectedProduct(null)}
-            product={selectedProduct}
-          />
-        ) : null}
       </AnimatePresence>
     </div>
   );
@@ -582,6 +619,17 @@ function getDescendantCategoryIds(category?: CategoryTreeNode): number[] {
   ];
 }
 
+function pruneEmptyCategoryBranches(
+  categories: CategoryTreeNode[],
+  assignedCategoryIds: Set<number>,
+): CategoryTreeNode[] {
+  return categories.flatMap((category) => {
+    const children = pruneEmptyCategoryBranches(category.children, assignedCategoryIds);
+    if (!assignedCategoryIds.has(category.id) && children.length === 0) return [];
+    return [{ ...category, children }];
+  });
+}
+
 function Header({
   accountName,
   cartQuantity,
@@ -605,6 +653,7 @@ function Header({
   selectCategory: (categoryId: number | "all") => void;
   setQuery: (value: string) => void;
 }): ReactElement {
+  const { t } = useLocale();
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/92 backdrop-blur-xl">
       <div className="mx-auto flex max-w-[1480px] items-center gap-3 px-4 py-3 sm:px-6">
@@ -626,49 +675,13 @@ function Header({
             MARINE UAE
           </span>
         </Link>
-        <div className="group hidden shrink-0 lg:block">
-          <button
-            className="flex min-h-11 items-center gap-2 rounded-full bg-[#0a2540] px-4 text-xs font-black text-white shadow-lg shadow-slate-900/10 transition hover:bg-[#0e7490]"
-            type="button"
-          >
-            <GridIcon />
-            Categories
-          </button>
-          <div className="invisible absolute left-1/2 top-[4.5rem] w-[1040px] -translate-x-1/2 rounded-[2rem] border border-slate-200 bg-white p-5 opacity-0 shadow-2xl shadow-slate-950/12 transition group-hover:visible group-hover:opacity-100">
-            <div className="grid grid-cols-4 gap-4">
-              {categoryTree.slice(0, 8).map((mainCategory) => (
-                <div className="rounded-2xl bg-slate-50 p-4" key={mainCategory.id}>
-                  <button
-                    className="text-left text-sm font-black text-[#0a2540] transition hover:text-[#0e7490]"
-                    onClick={() => selectCategory(mainCategory.id)}
-                    type="button"
-                  >
-                    {mainCategory.name}
-                  </button>
-                  <div className="mt-3 grid gap-2">
-                    {mainCategory.children.slice(0, 6).map((subcategory) => (
-                      <button
-                        className="text-left text-xs font-bold leading-5 text-slate-600 transition hover:text-[#0e7490]"
-                        key={subcategory.id}
-                        onClick={() => selectCategory(subcategory.id)}
-                        type="button"
-                      >
-                        {subcategory.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
         <label className="relative flex min-h-12 flex-1 items-center rounded-full border border-slate-200 bg-slate-50 px-4 transition focus-within:border-[#0e7490] focus-within:bg-white focus-within:shadow-sm">
           <SearchIcon />
-          <span className="sr-only">Search products</span>
+          <span className="sr-only">{t("header.search")}</span>
           <input
             className="min-w-0 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-slate-400"
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search life jackets, anchors, ropes, batteries, pumps or SKU"
+            placeholder={t("header.search")}
             value={query}
           />
         </label>
@@ -678,7 +691,7 @@ function Header({
           rel="noreferrer"
           target="_blank"
         >
-          Quick quote
+          {t("header.quickQuote")}
         </a>
         {accountName ? (
           <form action={logoutAction}>
@@ -686,7 +699,7 @@ function Header({
               className="hidden min-h-11 rounded-full border border-slate-200 px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-100 sm:block"
               type="submit"
             >
-              Logout
+              {t("header.logout")}
             </button>
           </form>
         ) : (
@@ -695,11 +708,12 @@ function Header({
             onClick={openLogin}
             type="button"
           >
-            Sign in
+            {t("header.signIn")}
           </button>
         )}
+        <LanguageToggle />
         <button
-          aria-label={`Open cart with ${cartQuantity} items`}
+          aria-label={t("header.openCart", { count: cartQuantity })}
           className="relative grid size-12 place-items-center rounded-full bg-[#0a2540] text-white shadow-lg shadow-slate-900/10 transition hover:-translate-y-0.5 hover:bg-[#0e7490]"
           onClick={openCart}
           type="button"
@@ -712,24 +726,7 @@ function Header({
           ) : null}
         </button>
       </div>
-      <nav aria-label="Product categories" className="border-t border-slate-100 bg-white/95">
-        <div className="mx-auto flex max-w-[1480px] items-center gap-2 overflow-x-auto px-4 py-2 sm:px-6 [scrollbar-width:none]">
-          {categoryTree.map((category) => (
-            <button
-              className={`min-h-10 shrink-0 rounded-full px-4 text-xs font-black transition ${
-                selectedCategoryId === category.id
-                  ? "bg-[#0a2540] text-white shadow-md shadow-slate-900/10"
-                  : "bg-slate-50 text-slate-700 hover:bg-[#eef8fb] hover:text-[#0e7490]"
-              }`}
-              key={category.id}
-              onClick={() => selectCategory(category.id)}
-              type="button"
-            >
-              {category.name}
-            </button>
-          ))}
-        </div>
-      </nav>
+      <CategoryNavigation categories={categoryTree} selectedCategoryId={selectedCategoryId} selectCategory={selectCategory} />
     </header>
   );
 }
@@ -740,12 +737,14 @@ function HeroShowcase({
   selectDepartment,
   setActiveSlide,
   slide,
+  slideCount,
 }: {
   activeSlide: number;
   products: Product[];
   selectDepartment: (matcher: string) => void;
   setActiveSlide: (index: number) => void;
   slide: HeroSlide;
+  slideCount: number;
 }): ReactElement {
   const productHighlights = products.slice(0, 3);
 
@@ -857,13 +856,13 @@ function HeroShowcase({
             </div>
           </div>
           <div className="flex items-center justify-between gap-3 rounded-full bg-white/10 p-2 backdrop-blur">
-            {heroSlides.map((item, index) => (
+            {Array.from({ length: slideCount }, (_, index) => index).map((index) => (
               <button
-                aria-label={`Show slide ${index + 1}: ${item.eyebrow}`}
+                aria-label={`Show slide ${index + 1}`}
                 className={`h-2.5 rounded-full transition-all ${
                   activeSlide === index ? "w-12 bg-white" : "w-3 bg-white/45 hover:bg-white/75"
                 }`}
-                key={item.title}
+                key={index}
                 onClick={() => setActiveSlide(index)}
                 type="button"
               />
@@ -972,14 +971,12 @@ function ProductCarousel({
   addToCart,
   eyebrow,
   products,
-  selectProduct,
   subtitle,
   title,
 }: {
   addToCart: (product: Product) => void;
   eyebrow: string;
   products: Product[];
-  selectProduct: (product: Product) => void;
   subtitle: string;
   title: string;
 }): ReactElement {
@@ -998,7 +995,6 @@ function ProductCarousel({
                 addToCart={addToCart}
                 index={index}
                 product={product}
-                selectProduct={selectProduct}
               />
             </motion.div>
           ))}
@@ -1059,12 +1055,10 @@ function ProductCard({
   addToCart,
   index,
   product,
-  selectProduct,
 }: {
   addToCart: (product: Product) => void;
   index: number;
   product: Product;
-  selectProduct: (product: Product) => void;
 }): ReactElement {
   const tones = [
     "from-sky-100 to-blue-50",
@@ -1075,11 +1069,10 @@ function ProductCard({
 
   return (
     <article className="group overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm transition hover:shadow-xl hover:shadow-slate-900/10">
-      <button
+      <Link
         aria-label={`View ${product.name}`}
         className={`relative block aspect-square w-full overflow-hidden bg-gradient-to-br ${tones[index % tones.length]} text-left`}
-        onClick={() => selectProduct(product)}
-        type="button"
+        href={`/products/${product.slug}`}
       >
         <Image
           alt={product.name}
@@ -1096,7 +1089,7 @@ function ProductCard({
         <div className="absolute right-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[10px] font-black text-[#0a2540] shadow-sm">
           {product.isFeatured ? "Featured" : "Marine"}
         </div>
-      </button>
+      </Link>
       <div className="p-4">
         <p className="text-xs font-black tracking-[0.16em] text-slate-400 uppercase">
           {product.brand}
@@ -1557,20 +1550,18 @@ function CartDrawer({
             <span>{formatAedFromCents(total)}</span>
           </div>
           <p className="mt-2 text-xs text-slate-500">Shipping and quote options are calculated later.</p>
-          <button
-            className="mt-5 min-h-12 w-full rounded-full bg-[#f97316] text-sm font-black text-white transition hover:bg-[#c2410c] disabled:bg-slate-300"
-            disabled={cart.length === 0}
-            type="button"
-          >
-            Proceed to checkout
-          </button>
+          {cart.length === 0 ? (
+            <button className="mt-5 min-h-12 w-full rounded-full bg-slate-300 text-sm font-black text-white" disabled type="button">Proceed to checkout</button>
+          ) : (
+            <Link className="mt-5 flex min-h-12 w-full items-center justify-center rounded-full bg-[#f97316] text-sm font-black text-white transition hover:bg-[#c2410c]" href="/checkout">Proceed to checkout</Link>
+          )}
         </div>
       </motion.div>
     </motion.div>
   );
 }
 
-function ProductDetail({
+export function ProductDetail({
   addToCart,
   close,
   product,
@@ -1723,6 +1714,7 @@ function MobileMenu({
   selectedCategoryId: number | "all";
   selectCategory: (categoryId: number | "all") => void;
 }): ReactElement {
+  const [expandedCategoryId, setExpandedCategoryId] = useState<number | null>(null);
   return (
     <motion.div
       aria-modal="true"
@@ -1771,16 +1763,15 @@ function MobileMenu({
                     ? "bg-[#0a2540] text-white"
                     : "text-[#0a2540]"
                 }`}
-                onClick={() => {
-                  selectCategory(category.id);
-                  close();
-                }}
+                aria-expanded={expandedCategoryId === category.id}
+                onClick={() => setExpandedCategoryId((current) => current === category.id ? null : category.id)}
                 type="button"
               >
                 {category.name}
               </button>
-              <div className="mt-2 grid gap-1">
-                {category.children.slice(0, 6).map((subcategory) => (
+              {expandedCategoryId === category.id ? <div className="mt-2 grid gap-1">
+                <button className="min-h-10 rounded-xl px-3 text-left text-xs font-black text-[#0e7490]" onClick={() => { selectCategory(category.id); close(); }} type="button">View all {category.name}</button>
+                {category.children.map((subcategory) => (
                   <button
                     className={`min-h-10 rounded-xl px-3 text-left text-xs font-bold ${
                       selectedCategoryId === subcategory.id
@@ -1797,7 +1788,7 @@ function MobileMenu({
                     {subcategory.name}
                   </button>
                 ))}
-              </div>
+              </div> : null}
             </div>
           ))}
         </div>
@@ -1903,14 +1894,6 @@ function MenuIcon(): ReactElement {
   return (
     <svg aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
       <path d="M4 7h16M4 12h16M4 17h16" />
-    </svg>
-  );
-}
-
-function GridIcon(): ReactElement {
-  return (
-    <svg aria-hidden="true" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-      <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" />
     </svg>
   );
 }

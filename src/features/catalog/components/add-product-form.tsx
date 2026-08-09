@@ -3,6 +3,7 @@
 import type { ReactElement } from "react";
 import { useActionState } from "react";
 import type { Category } from "@/domain/catalog/category";
+import type { Brand } from "@/domain/demo-store/demo-store-repository";
 import { createProductAction } from "@/features/catalog/catalog.actions";
 import {
   initialCreateProductActionState,
@@ -10,10 +11,11 @@ import {
 } from "@/features/catalog/catalog.types";
 
 interface AddProductFormProps {
+  brands: Brand[];
   categories: Category[];
 }
 
-export function AddProductForm({ categories }: AddProductFormProps): ReactElement {
+export function AddProductForm({ brands, categories }: AddProductFormProps): ReactElement {
   const [state, action, pending] = useActionState<CreateProductActionState, FormData>(
     createProductAction,
     initialCreateProductActionState,
@@ -42,6 +44,17 @@ export function AddProductForm({ categories }: AddProductFormProps): ReactElemen
       </section>
 
       <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
+        <h3 className="text-lg font-bold text-[#102846]">3. Storefront placement</h3>
+        <p className="mt-1 text-sm text-slate-500">Choose the homepage rails this product should appear in.</p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          {[["isFeatured", "Featured product"], ["isNewArrival", "New arrival"], ["isTopSelling", "Top selling"], ["isBestDeal", "Best deal"], ["isBannerProduct", "Banner product"]].map(([name, label]) => (
+            <label className="flex min-h-12 items-center gap-3 rounded-2xl bg-slate-50 px-4 text-sm font-semibold text-slate-700" key={name}><input className="size-4 accent-[#f05a28]" name={name} type="checkbox" />{label}</label>
+          ))}
+          <Field inputMode="numeric" label="Homepage order" name="homepageOrder" placeholder="0" />
+        </div>
+      </section>
+
+      <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
         <div className="border-b border-slate-100 pb-4">
           <h3 className="text-lg font-bold text-[#102846]">1. Product identity</h3>
           <p className="mt-1 text-sm text-slate-500">
@@ -56,12 +69,7 @@ export function AddProductForm({ categories }: AddProductFormProps): ReactElemen
             name="name"
             placeholder="Victron Blue Smart Charger 12V 15A"
           />
-          <Field
-            error={state.fieldErrors?.brand?.[0]}
-            label="Brand"
-            name="brand"
-            placeholder="Victron Energy"
-          />
+          <BrandSelect brands={brands} error={state.fieldErrors?.brand?.[0]} />
           <Field
             error={state.fieldErrors?.sku?.[0]}
             label="SKU"
@@ -152,6 +160,10 @@ export function AddProductForm({ categories }: AddProductFormProps): ReactElemen
       </div>
     </form>
   );
+}
+
+function BrandSelect({ brands, error }: { brands: Brand[]; error?: string }): ReactElement {
+  return <label className="block space-y-2"><span className="text-sm font-semibold text-slate-700">Brand</span><select className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#0e568f] focus:bg-white" defaultValue="" name="brand"><option disabled value="">Select a managed brand</option>{brands.map((brand) => <option key={brand.id} value={brand.name}>{brand.name}</option>)}</select><p className="text-xs text-slate-500">Need another brand? Add it from the Brands page first.</p>{error ? <p className="text-sm text-rose-600">{error}</p> : null}</label>;
 }
 
 interface FieldProps {

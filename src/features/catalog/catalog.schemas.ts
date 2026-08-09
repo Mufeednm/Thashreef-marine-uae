@@ -2,6 +2,12 @@ import { z } from "zod";
 
 export const createProductSchema = z.object({
   brand: z.string().trim().min(2, { error: "Brand must be at least 2 characters long." }),
+  homepageOrder: z.coerce.number().int().min(0).default(0),
+  isBannerProduct: z.string().optional().transform((value) => value === "on"),
+  isBestDeal: z.string().optional().transform((value) => value === "on"),
+  isFeatured: z.string().optional().transform((value) => value === "on"),
+  isNewArrival: z.string().optional().transform((value) => value === "on"),
+  isTopSelling: z.string().optional().transform((value) => value === "on"),
   categoryId: z.coerce.number().int().positive({ error: "Select a category." }),
   description: z
     .string()
@@ -68,6 +74,8 @@ export const createCategorySchema = z.object({
     .string()
     .optional()
     .transform((value) => value === "on"),
+  homepageOrder: z.coerce.number().int().min(0).default(0),
+  showOnHomepage: z.string().optional().transform((value) => value === "on"),
   name: z.string().trim().min(2, { error: "Category name must be at least 2 characters long." }),
   parentCategoryId: z
     .string()
@@ -78,3 +86,11 @@ export const createCategorySchema = z.object({
       error: "Choose a valid parent category.",
     }),
 });
+
+export const brandSchema = z.object({
+  displayOrder: z.coerce.number().int().min(0, { error: "Display order cannot be negative." }),
+  logoText: z.string().trim().min(1, { error: "Logo text is required." }).max(24),
+  name: z.string().trim().min(2, { error: "Brand name must be at least 2 characters long." }).max(80),
+});
+
+export const catalogRecordIdSchema = z.coerce.number().int().positive();

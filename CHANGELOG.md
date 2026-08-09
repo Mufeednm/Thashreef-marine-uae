@@ -4,6 +4,12 @@
 
 ### Added
 
+- Added a Render Free deployment blueprint for temporary public testing with resettable SQLite demo data.
+
+- Added full-page product detail routes with category-based related product recommendations.
+
+- Added brand CRUD in the admin catalog, protected brand/category deletion, and managed brand selection during product creation.
+
 - Next.js, TypeScript, Tailwind CSS, ESLint, Prettier, Sequelize, MySQL, and Zod foundation.
 - Initial architecture, security, SEO, deployment, and engineering documentation.
 - Functional reference analysis for the marine-parts storefront scope.
@@ -22,3 +28,7 @@
 - Reworked the homepage into a richer marine accessories marketplace with sticky mega-menu navigation, a clickable category navbar that filters and jumps to matching products, accessory-focused hero slides, promotional banners, six product rails, brand logos, testimonials, gallery, newsletter, and Framer Motion interactions.
 - Added a versioned nested marine catalog seed with 12 main categories, subcategories, a child category, 12 brands, and 58 marine-accessory products; products are assigned only to subcategory/child-category records.
 - Updated the storefront navbar to load main categories from the database and show database-backed subcategories in the hover mega menu.
+- Added database-backed homepage banners, category homepage placement, product merchandising flags, and a customer-only four-step UAE checkout experience.
+- Prevented empty category navigation results by excluding empty storefront branches and resetting stale searches on category selection; added category filtering to the admin product list.
+- Fixed catalog product cards remaining visually hidden after category changes and added a clear catalog empty state.
+- Replaced the all-category mega panel with an accessible single-category dropdown navigation and added persistent EN/AR locale, RTL direction, and Arabic font foundations.

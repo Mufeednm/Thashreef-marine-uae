@@ -1,0 +1,15 @@
+import type { ReactElement } from "react";
+import { restoreSessionUser } from "@/application/auth/auth-service";
+import { CheckoutExperience } from "@/features/checkout/components/checkout-experience";
+import { CheckoutLogin } from "@/features/checkout/components/checkout-login";
+import { readSessionUser } from "@/infrastructure/auth/session-cookie";
+import { createDemoStoreRepository } from "@/infrastructure/demo-store/file-demo-store-repository";
+
+export const metadata = { title: "Checkout | Thashreef Marine UAE" };
+
+export default async function CheckoutPage(): Promise<ReactElement> {
+  const repository = createDemoStoreRepository();
+  const user = await restoreSessionUser(repository, await readSessionUser());
+  if (!user || user.role !== "customer") return <CheckoutLogin />;
+  return <CheckoutExperience customer={{ email: user.email, name: user.name }} />;
+}

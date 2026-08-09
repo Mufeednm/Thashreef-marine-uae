@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import type { ReactElement } from "react";
+import { useMemo, useState, type ReactElement } from "react";
 import type { Category } from "@/domain/catalog/category";
 import type { Product } from "@/domain/catalog/product";
 import type { ProductVariant } from "@/domain/catalog/product-variant";
@@ -16,6 +18,7 @@ export function AdminProductsPage({
   products,
   variants,
 }: AdminProductsPageProps): ReactElement {
+  const [categoryId, setCategoryId] = useState<number | "all">("all");
   const variantCountByProduct = new Map<string, number>();
 
   for (const variant of variants) {
@@ -24,6 +27,14 @@ export function AdminProductsPage({
       (variantCountByProduct.get(variant.productId) ?? 0) + 1,
     );
   }
+  const categoriesWithProducts = useMemo(
+    () => categories.filter((category) => products.some((product) => product.categoryId === category.id)),
+    [categories, products],
+  );
+  const filteredProducts = useMemo(
+    () => (categoryId === "all" ? products : products.filter((product) => product.categoryId === categoryId)),
+    [categoryId, products],
+  );
 
   return (
     <div className="space-y-7">
@@ -58,10 +69,21 @@ export function AdminProductsPage({
         <div className="flex flex-col gap-3 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-bold text-[#102846]">All catalog products</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Imported workbook products and new admin-created products share the same list.
-            </p>
+            <p className="mt-1 text-sm text-slate-500">{filteredProducts.length} products shown. Filter by a populated category.</p>
           </div>
+          <label className="flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-600">
+            <span className="sr-only">Filter products by category</span>
+            <select
+              className="min-h-11 max-w-full rounded-xl border border-slate-200 bg-white px-3 outline-none transition focus:border-[#0e568f]"
+              onChange={(event) => setCategoryId(event.target.value === "all" ? "all" : Number(event.target.value))}
+              value={categoryId}
+            >
+              <option value="all">All populated categories</option>
+              {categoriesWithProducts.map((category) => (
+                <option key={category.id} value={category.id}>{category.name}</option>
+              ))}
+            </select>
+          </label>
         </div>
 
         <div className="overflow-x-auto">
@@ -78,7 +100,7 @@ export function AdminProductsPage({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <tr className="hover:bg-slate-50" key={product.id}>
                   <td className="max-w-[300px] px-5 py-4">
                     <p className="truncate font-bold text-slate-800">{product.name}</p>
@@ -124,6 +146,9 @@ export function AdminProductsPage({
                   </td>
                 </tr>
               ))}
+              {filteredProducts.length === 0 ? (
+                <tr><td className="px-5 py-10 text-center text-slate-500" colSpan={7}>No products are assigned to this category yet.</td></tr>
+              ) : null}
             </tbody>
           </table>
         </div>

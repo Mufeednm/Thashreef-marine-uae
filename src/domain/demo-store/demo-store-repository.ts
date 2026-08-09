@@ -38,7 +38,19 @@ export interface Brand {
   displayOrder: number;
 }
 
+export interface HomepageBanner {
+  id: number;
+  imageUrl: string;
+  title: string;
+  subtitle: string;
+  buttonText: string;
+  buttonLink: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
 export interface DemoStoreRepository {
+  addBrand(input: Omit<Brand, "id">): Promise<Brand>;
   addCategory(input: PersistedCategoryInput): Promise<Category>;
   addCategoryField(input: {
     categoryId: number;
@@ -46,14 +58,22 @@ export interface DemoStoreRepository {
     fieldKey: string;
     label: string;
   }): Promise<CategoryField>;
+  deleteBrand(id: number): Promise<void>;
+  deleteCategory(id: number): Promise<void>;
   addProduct(input: PersistedProductInput): Promise<Product>;
   findUserByEmail(emailOrUsername: string): Promise<DemoUser | null>;
   findUserById(id: string): Promise<DemoUser | null>;
   getAdminOverviewMetrics(): Promise<AdminOverviewMetrics>;
   listBrands(): Promise<Brand[]>;
+  listHomepageBanners(): Promise<HomepageBanner[]>;
   listCategories(): Promise<Category[]>;
   listCategoryFields(): Promise<CategoryField[]>;
   listProducts(): Promise<Product[]>;
   listProductVariants(): Promise<ProductVariant[]>;
   listRecentOrders(limit: number): Promise<AdminRecentOrder[]>;
+  updateBrand(id: number, input: Omit<Brand, "id" | "slug">): Promise<Brand | null>;
+  updateCategory(
+    id: number,
+    input: Omit<PersistedCategoryInput, "slug" | "fieldLabels">,
+  ): Promise<Category | null>;
 }

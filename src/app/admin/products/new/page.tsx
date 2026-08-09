@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ReactElement } from "react";
-import { listCatalogAssignableCategories } from "@/application/catalog/catalog-service";
+import { listCatalogAssignableCategories, listCatalogBrands } from "@/application/catalog/catalog-service";
 import { restoreSessionUser } from "@/application/auth/auth-service";
 import { AdminShell } from "@/features/admin/components/admin-shell";
 import { AddProductForm } from "@/features/catalog/components/add-product-form";
@@ -16,7 +16,7 @@ export default async function AdminNewProductPage(): Promise<ReactElement> {
     redirect("/admin");
   }
 
-  const categories = await listCatalogAssignableCategories(repository);
+  const [categories, brands] = await Promise.all([listCatalogAssignableCategories(repository), listCatalogBrands(repository)]);
 
   return (
     <AdminShell
@@ -32,7 +32,7 @@ export default async function AdminNewProductPage(): Promise<ReactElement> {
       eyebrow="Catalog"
       title="Add product"
     >
-      <AddProductForm categories={categories} />
+      <AddProductForm brands={brands} categories={categories} />
     </AdminShell>
   );
 }

@@ -1,5 +1,41 @@
 # Decision Log
 
+## 2026-08-09 - Render Free is the temporary test host
+
+- **Decision:** Configure the current SQLite-backed demo for deployment as a Render Free web service, without persistent storage.
+- **Reason:** The goal is public testing before a production database migration; Render Free can run the complete Node application while Vercel cannot safely persist the current local SQLite writes.
+- **Impact:** The hosted test service can sleep after inactivity and all catalog/admin writes can reset after a restart or redeploy. A durable Postgres/MySQL migration remains required before a production launch.
+
+## 2026-08-09 - Product viewing uses dedicated detail pages
+
+- **Decision:** Open storefront products on a stable `/products/[slug]` route instead of relying on the compact quick-view modal, and render related products that share the product's assigned category.
+- **Reason:** Product browsing needs a shareable full-page experience with room for product information, ordering feedback, and relevant category discovery.
+- **Impact:** Product cards now deep-link to detail pages; the detail page preserves the local session cart behavior and offers category-matched related products.
+
+## 2026-08-07 - Admin catalog uses managed brands and protected taxonomy changes
+
+- **Decision:** Add a dedicated Brands page with create, edit, and deletion flows; make product creation select from those brands; provide category editing and protect brand/category deletions when active product or taxonomy relationships exist.
+- **Reason:** Free-text product brands create inconsistent storefront filters, and catalogue administrators need safe, visible controls over core taxonomy.
+- **Impact:** Product assignment is now normalized at the admin workflow level while the existing lightweight SQLite schema continues storing the product brand as text for local-demo compatibility.
+
+## 2026-07-23 - Client-side EN/AR locale switching for the local storefront
+
+- **Decision:** Use JSON dictionaries and a client locale provider to change language, text direction, and font instantly while persisting the visitor selection in local storage.
+- **Reason:** The current local-demo routes need bilingual interaction without adding external i18n dependencies or forcing a full route refresh.
+- **Impact:** The translation provider is reusable across storefront, checkout, and admin work; locale-aware server routing can be added later if localized SEO URLs are required.
+
+## 2026-07-23 - Storefront navigation exposes populated catalog branches only
+
+- **Decision:** Filter the public category navigation to branches that contain at least one assigned product and reset the catalog search when a visitor changes category.
+- **Reason:** A department selection must never lead to a blank catalog caused by an empty nested category or a search term left over from an earlier browsing context.
+- **Impact:** Admins can still create future taxonomy branches; they become visible publicly once products are assigned. The admin product list provides a populated-category filter for verification.
+
+## 2026-07-23 - Storefront merchandising and checkout remain local-demo ready
+
+- **Decision:** Store homepage banner records and product/category merchandising flags in SQLite, and retain the basket in browser session storage during the sign-in-to-checkout transition.
+- **Reason:** This makes the public storefront configurable without introducing a payment provider or customer-data service outside the existing local architecture.
+- **Impact:** The checkout captures a complete UAE delivery and payment-method flow for demonstration; live payment authorization, durable order creation, and production-grade registration remain subsequent integration work.
+
 ## 2026-07-14 - Local testing uses a file-backed demo store
 
 - **Decision:** Implement the first testable auth and catalog flow with a local JSON store and signed cookie sessions.

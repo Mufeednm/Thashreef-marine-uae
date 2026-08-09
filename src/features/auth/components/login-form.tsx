@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import { loginAction } from "@/features/auth/auth.actions";
 import { initialLoginActionState, type LoginActionState } from "@/features/auth/auth.types";
 
-export function LoginForm(): ReactElement {
+export function LoginForm({ redirectTo }: { redirectTo?: string } = {}): ReactElement {
   const [state, action, pending] = useActionState<LoginActionState, FormData>(
     loginAction,
     initialLoginActionState,
@@ -16,6 +16,7 @@ export function LoginForm(): ReactElement {
       action={action}
       className="space-y-4 rounded-[28px] bg-white/92 p-6 shadow-lg shadow-slate-900/10"
     >
+      {redirectTo ? <input name="redirectTo" type="hidden" value={redirectTo} /> : null}
       <div className="space-y-1">
         <p className="text-xs font-semibold tracking-[0.3em] text-teal-700 uppercase">
           Secure Demo Login

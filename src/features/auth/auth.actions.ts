@@ -38,7 +38,8 @@ export async function loginAction(
   }
 
   await writeSessionCookie(authenticatedUser);
-  redirect("/");
+  const redirectTo = formData.get("redirectTo");
+  redirect(typeof redirectTo === "string" && redirectTo.startsWith("/") ? redirectTo : "/");
 }
 
 export async function logoutAction(): Promise<void> {

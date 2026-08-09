@@ -5,6 +5,8 @@ export interface Category {
   parentCategoryId: number | null;
   bannerImageUrl: string | null;
   isFeatured: boolean;
+  showOnHomepage: boolean;
+  homepageOrder: number;
   displayOrder: number;
 }
 
@@ -18,6 +20,10 @@ export interface CreateCategoryInput {
   displayOrder: number;
   fieldLabels: string[];
   isFeatured: boolean;
+  showOnHomepage?: boolean;
+  homepageOrder?: number;
   name: string;
   parentCategoryId?: number | null;
 }
+
+export type UpdateCategoryInput = Omit<CreateCategoryInput, "fieldLabels">;

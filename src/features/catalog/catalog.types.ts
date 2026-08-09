@@ -26,6 +26,7 @@ export interface CreateCategoryActionState {
     isFeatured?: string[];
     name?: string[];
     parentCategoryId?: string[];
+    logoText?: string[];
   };
   message?: string;
   status: "error" | "idle" | "success";
