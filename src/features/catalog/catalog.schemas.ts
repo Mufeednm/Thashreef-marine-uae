@@ -14,8 +14,10 @@ export const createProductSchema = z.object({
     .trim()
     .min(16, { error: "Description must be at least 16 characters long." })
     .max(280, { error: "Description must be 280 characters or less." }),
+  descriptionAr: z.string().trim().max(280, { error: "Arabic description must be 280 characters or less." }).optional().transform((value) => value || null),
   imageUrl: z.string().trim().nullish().transform((value) => value ?? ""),
   name: z.string().trim().min(3, { error: "Product name must be at least 3 characters long." }),
+  nameAr: z.string().trim().max(140, { error: "Arabic product name must be 140 characters or less." }).optional().transform((value) => value || null),
   regularPriceAed: z
     .string()
     .trim()
@@ -69,6 +71,7 @@ export const createCategorySchema = z.object({
   homepageOrder: z.coerce.number().int().min(0).default(0),
   showOnHomepage: z.string().optional().transform((value) => value === "on"),
   name: z.string().trim().min(2, { error: "Category name must be at least 2 characters long." }),
+  nameAr: z.string().trim().max(100, { error: "Arabic category name must be 100 characters or less." }).optional().transform((value) => value || null),
   parentCategoryId: z
     .string()
     .trim()
@@ -83,6 +86,7 @@ export const brandSchema = z.object({
   displayOrder: z.coerce.number().int().min(0, { error: "Display order cannot be negative." }),
   logoText: z.string().trim().min(1, { error: "Logo text is required." }).max(24),
   name: z.string().trim().min(2, { error: "Brand name must be at least 2 characters long." }).max(80),
+  nameAr: z.string().trim().max(80, { error: "Arabic brand name must be 80 characters or less." }).optional().transform((value) => value || null),
 });
 
 export const catalogRecordIdSchema = z.coerce.number().int().positive();

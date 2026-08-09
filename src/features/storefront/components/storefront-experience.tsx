@@ -196,6 +196,7 @@ export function StorefrontExperience({
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | "all">("all");
   const [activeSlide, setActiveSlide] = useState(0);
   const [cart, setCart] = useState<CartLine[]>([]);
+  const [cartHydrated, setCartHydrated] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -315,8 +316,23 @@ export function StorefrontExperience({
   }, [shouldReduceMotion, slides.length]);
 
   useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        const savedCart = JSON.parse(window.sessionStorage.getItem("thashreef-cart") ?? "[]") as CartLine[];
+        setCart(Array.isArray(savedCart) ? savedCart : []);
+      } catch {
+        setCart([]);
+      } finally {
+        setCartHydrated(true);
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!cartHydrated) return;
     window.sessionStorage.setItem("thashreef-cart", JSON.stringify(cart));
-  }, [cart]);
+  }, [cart, cartHydrated]);
 
   function addToCart(product: Product): void {
     setCart((lines) => {
@@ -345,6 +361,14 @@ export function StorefrontExperience({
     setQuery("");
     setSelectedCategoryId(nextCategoryId);
     document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function searchProducts(value: string): void {
+    setQuery(value);
+    if (value.trim()) {
+      setSelectedCategoryId("all");
+      window.requestAnimationFrame(() => document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
   }
 
   function updateQuantity(productId: string, change: number): void {
@@ -376,7 +400,7 @@ export function StorefrontExperience({
         query={query}
         selectedCategoryId={selectedCategoryId}
         selectCategory={selectCategoryAndScroll}
-        setQuery={setQuery}
+        setQuery={searchProducts}
       />
 
       <main>
@@ -442,7 +466,7 @@ export function StorefrontExperience({
           title="New Arrivals"
         />
 
-        <BrandLogoCarousel brands={brandNames.length > 0 ? brandNames : brandTiles.map((brand) => brand.label)} />
+        <BrandLogoCarousel brands={brands} />
 
         <ProductCarousel
           addToCart={addToCart}
@@ -655,7 +679,7 @@ function Header({
             MARINE UAE
           </span>
         </Link>
-        <label className="relative flex min-h-12 flex-1 items-center rounded-full border border-slate-200 bg-slate-50 px-4 transition focus-within:border-[#0e7490] focus-within:bg-white focus-within:shadow-sm">
+        <label className="relative flex min-h-12 min-w-0 flex-1 items-center rounded-full border border-slate-200 bg-slate-50 px-4 transition focus-within:border-[#0e7490] focus-within:bg-white focus-within:shadow-sm">
           <SearchIcon />
           <span className="sr-only">{t("header.search")}</span>
           <input
@@ -1040,6 +1064,9 @@ function ProductCard({
   index: number;
   product: Product;
 }): ReactElement {
+  const { locale } = useLocale();
+  const name = locale === "ar" && product.nameAr ? product.nameAr : product.name;
+  const description = locale === "ar" && product.descriptionAr ? product.descriptionAr : product.description;
   const tones = [
     "from-sky-100 to-blue-50",
     "from-orange-100 to-amber-50",
@@ -1050,12 +1077,12 @@ function ProductCard({
   return (
     <article className="group overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm transition hover:shadow-xl hover:shadow-slate-900/10">
       <Link
-        aria-label={`View ${product.name}`}
+        aria-label={`View ${name}`}
         className={`relative block aspect-square w-full overflow-hidden bg-gradient-to-br ${tones[index % tones.length]} text-left`}
         href={`/products/${product.slug}`}
       >
         <Image
-          alt={product.name}
+          alt={name}
           className="h-full w-full object-contain p-7 transition duration-300 group-hover:scale-105"
           height={640}
           loading={index > 3 ? "lazy" : "eager"}
@@ -1074,9 +1101,9 @@ function ProductCard({
         <p className="text-xs font-black tracking-[0.16em] text-slate-400 uppercase">
           {product.brand}
         </p>
-        <p className="mt-2 min-h-10 text-sm font-black leading-5 text-[#0a2540]">{product.name}</p>
+        <p className="mt-2 min-h-10 text-sm font-black leading-5 text-[#0a2540]">{name}</p>
         <p className="mt-2 line-clamp-2 min-h-10 text-xs leading-5 text-slate-500">
-          {product.description}
+          {description}
         </p>
         <div className="mt-4 flex items-end justify-between gap-2">
           <div>
@@ -1151,7 +1178,8 @@ function PromoBanner({
   );
 }
 
-function BrandLogoCarousel({ brands }: { brands: string[] }): ReactElement {
+function BrandLogoCarousel({ brands }: { brands: Brand[] }): ReactElement {
+  const { locale } = useLocale();
   return (
     <section className="mx-auto max-w-[1480px] px-4 pb-12 sm:px-6">
       <SectionHeader
@@ -1161,19 +1189,21 @@ function BrandLogoCarousel({ brands }: { brands: string[] }): ReactElement {
       />
       <div className="mt-7 flex snap-x gap-4 overflow-x-auto pb-4 [scrollbar-width:none]">
         {brands.slice(0, 12).map((brand, index) => (
-          <div
-            className="flex h-28 w-52 shrink-0 snap-start items-center justify-center rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-            key={brand}
+          <Link
+            aria-label={`Shop ${locale === "ar" && brand.nameAr ? brand.nameAr : brand.name} products`}
+            className="flex h-28 w-52 shrink-0 snap-start items-center justify-center rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-cyan-300 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#0e568f]"
+            href={`/brands/${brand.slug}`}
+            key={brand.id}
           >
             <span
               className={`grid size-12 place-items-center rounded-2xl bg-gradient-to-br ${
                 brandTiles[index % brandTiles.length].tone
               } text-sm font-black text-white`}
             >
-              {brand.slice(0, 2).toUpperCase()}
+              {brand.logoText.slice(0, 2).toUpperCase()}
             </span>
-            <span className="ml-3 text-sm font-black text-[#0a2540]">{brand}</span>
-          </div>
+            <span className="ml-3 text-sm font-black text-[#0a2540]">{locale === "ar" && brand.nameAr ? brand.nameAr : brand.name}</span>
+          </Link>
         ))}
       </div>
     </section>

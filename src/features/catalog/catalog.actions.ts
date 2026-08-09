@@ -43,7 +43,6 @@ export async function createProductAction(
 ): Promise<CreateProductActionState> {
   const parsedProduct = createProductSchema.safeParse({
     brand: formData.get("brand"),
-    homepageOrder: formData.get("homepageOrder"),
     isBannerProduct: formData.get("isBannerProduct"),
     isBestDeal: formData.get("isBestDeal"),
     isFeatured: formData.get("isFeatured"),
@@ -51,8 +50,10 @@ export async function createProductAction(
     isTopSelling: formData.get("isTopSelling"),
     categoryId: formData.get("categoryId"),
     description: formData.get("description"),
+    descriptionAr: formData.get("descriptionAr"),
     imageUrl: "",
     name: formData.get("name"),
+    nameAr: formData.get("nameAr"),
     regularPriceAed: formData.get("regularPriceAed"),
     salePriceAed: formData.get("salePriceAed"),
     sku: formData.get("sku"),
@@ -84,6 +85,7 @@ export async function createProductAction(
     brand: parsedProduct.data.brand,
     categoryId: parsedProduct.data.categoryId,
     description: parsedProduct.data.description,
+    descriptionAr: parsedProduct.data.descriptionAr,
     imageUrl: await persistProductImage(parsedImage.data.imageFile),
     homepageOrder: parsedProduct.data.homepageOrder,
     isBannerProduct: parsedProduct.data.isBannerProduct,
@@ -92,6 +94,7 @@ export async function createProductAction(
     isNewArrival: parsedProduct.data.isNewArrival,
     isTopSelling: parsedProduct.data.isTopSelling,
     name: parsedProduct.data.name,
+    nameAr: parsedProduct.data.nameAr,
     regularPriceAedCents: Math.round(parsedProduct.data.regularPriceAed * 100),
     salePriceAedCents:
       parsedProduct.data.salePriceAed === null
@@ -156,7 +159,7 @@ export async function deleteProductAction(_previousState: CreateProductActionSta
 }
 
 function productFormValues(formData: FormData) {
-  return { brand: formData.get("brand"), homepageOrder: formData.get("homepageOrder"), isBannerProduct: formData.get("isBannerProduct"), isBestDeal: formData.get("isBestDeal"), isFeatured: formData.get("isFeatured"), isNewArrival: formData.get("isNewArrival"), isTopSelling: formData.get("isTopSelling"), categoryId: formData.get("categoryId"), description: formData.get("description"), imageUrl: "", name: formData.get("name"), regularPriceAed: formData.get("regularPriceAed"), salePriceAed: formData.get("salePriceAed"), sku: formData.get("sku") };
+  return { brand: formData.get("brand"), homepageOrder: 0, isBannerProduct: formData.get("isBannerProduct"), isBestDeal: formData.get("isBestDeal"), isFeatured: formData.get("isFeatured"), isNewArrival: formData.get("isNewArrival"), isTopSelling: formData.get("isTopSelling"), categoryId: formData.get("categoryId"), description: formData.get("description"), descriptionAr: formData.get("descriptionAr"), imageUrl: "", name: formData.get("name"), nameAr: formData.get("nameAr"), regularPriceAed: formData.get("regularPriceAed"), salePriceAed: formData.get("salePriceAed"), sku: formData.get("sku") };
 }
 
 function toProductInput(product: z.infer<typeof createProductSchema>) {
@@ -190,7 +193,7 @@ function revalidateCatalogAdmin(): void {
 }
 
 export async function createBrandAction(_previousState: CreateCategoryActionState, formData: FormData): Promise<CreateCategoryActionState> {
-  const parsed = brandSchema.safeParse({ name: formData.get("name"), logoText: formData.get("logoText"), displayOrder: formData.get("displayOrder") });
+  const parsed = brandSchema.safeParse({ name: formData.get("name"), nameAr: formData.get("nameAr"), logoText: formData.get("logoText"), displayOrder: formData.get("displayOrder") });
   if (!parsed.success) return { fieldErrors: parsed.error.flatten().fieldErrors, message: "Please correct the brand fields.", status: "error" };
   const { repository, adminUser } = await getAdminContext();
   const result = await createBrandForAdmin(repository, adminUser, parsed.data);
@@ -201,7 +204,7 @@ export async function createBrandAction(_previousState: CreateCategoryActionStat
 
 export async function updateBrandAction(_previousState: CreateCategoryActionState, formData: FormData): Promise<CreateCategoryActionState> {
   const id = catalogRecordIdSchema.safeParse(formData.get("id"));
-  const parsed = brandSchema.safeParse({ name: formData.get("name"), logoText: formData.get("logoText"), displayOrder: formData.get("displayOrder") });
+  const parsed = brandSchema.safeParse({ name: formData.get("name"), nameAr: formData.get("nameAr"), logoText: formData.get("logoText"), displayOrder: formData.get("displayOrder") });
   if (!id.success || !parsed.success) return { message: "Please correct the brand fields.", status: "error" };
   const { repository, adminUser } = await getAdminContext();
   const result = await updateBrandForAdmin(repository, adminUser, id.data, parsed.data);
@@ -222,7 +225,7 @@ export async function deleteBrandAction(_previousState: CreateCategoryActionStat
 
 export async function updateCategoryAction(_previousState: CreateCategoryActionState, formData: FormData): Promise<CreateCategoryActionState> {
   const id = catalogRecordIdSchema.safeParse(formData.get("id"));
-  const parsed = createCategorySchema.safeParse({ bannerImageUrl: formData.get("bannerImageUrl"), displayOrder: formData.get("displayOrder"), isFeatured: formData.get("isFeatured"), homepageOrder: formData.get("homepageOrder"), showOnHomepage: formData.get("showOnHomepage"), name: formData.get("name"), parentCategoryId: formData.get("parentCategoryId") });
+  const parsed = createCategorySchema.safeParse({ bannerImageUrl: formData.get("bannerImageUrl"), displayOrder: formData.get("displayOrder"), isFeatured: formData.get("isFeatured"), homepageOrder: formData.get("homepageOrder"), showOnHomepage: formData.get("showOnHomepage"), name: formData.get("name"), nameAr: formData.get("nameAr"), parentCategoryId: formData.get("parentCategoryId") });
   if (!id.success || !parsed.success) return { message: "Please correct the category fields.", status: "error" };
   const { repository, adminUser } = await getAdminContext();
   const result = await updateCategoryForAdmin(repository, adminUser, id.data, parsed.data);
@@ -253,6 +256,7 @@ export async function createCategoryAction(
     homepageOrder: formData.get("homepageOrder"),
     showOnHomepage: formData.get("showOnHomepage"),
     name: formData.get("name"),
+    nameAr: formData.get("nameAr"),
     parentCategoryId: formData.get("parentCategoryId"),
   });
 
@@ -282,6 +286,7 @@ export async function createCategoryAction(
     homepageOrder: parsedCategory.data.homepageOrder,
     showOnHomepage: parsedCategory.data.showOnHomepage,
     name: parsedCategory.data.name,
+    nameAr: parsedCategory.data.nameAr,
     parentCategoryId: parsedCategory.data.parentCategoryId,
   });
 

@@ -20,11 +20,12 @@ export default async function AdminPage(): Promise<ReactElement> {
     redirect("/admin/login");
   }
 
-  const [products, categories, variants, metrics, recentOrders] = await Promise.all([
+  const [products, categories, variants, metrics, activity, recentOrders] = await Promise.all([
     listCatalogProducts(repository),
     listCatalogCategories(repository),
     listCatalogVariants(repository),
     repository.getAdminOverviewMetrics(),
+    repository.getAdminActivityMetrics(),
     repository.listRecentOrders(5),
   ]);
 
@@ -38,20 +39,15 @@ export default async function AdminPage(): Promise<ReactElement> {
           >
             View products
           </Link>
-          <Link
-            className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[#f05a28] px-5 text-sm font-bold text-white transition hover:bg-[#d94d20]"
-            href="/admin/products/new"
-          >
-            Add product
-          </Link>
         </>
       }
-      description="Start here for the catalog and workbook-backed commerce overview. The admin tools are now split into dedicated pages for easier catalog management."
+      description="A focused view of catalog, customer, and order activity."
       eyebrow="Overview"
       title="Store overview"
     >
       <AdminOverviewPage
         categories={categories}
+        activity={activity}
         metrics={metrics}
         products={products}
         recentOrders={recentOrders}

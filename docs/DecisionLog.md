@@ -1,5 +1,57 @@
 # Decision Log
 
+## 2026-08-09 - Make dashboard analytics literal, not illustrative
+
+The overview now compares the actual stored totals for today, the last seven days, and the current month. It deliberately does not present these accumulated periods as a daily trend. The supporting text makes clear that figures update from SQLite order and customer records, not from a forecast.
+
+## 2026-08-09 - Store catalogue copy in both English and Arabic
+
+Product names/descriptions plus category and brand names now have optional Arabic fields. English remains required for stable SKUs, slugs, and administration; Arabic copy is persisted separately so the storefront can use it as the translated catalogue content is completed.
+
+## 2026-08-09 - Keep the compact header within the phone viewport
+
+The storefront search area may shrink below its placeholder's intrinsic width on narrow screens. This keeps the menu, brand mark, search, and cart accessible together without creating page-level horizontal scrolling; horizontal product and category rails remain independently scrollable by design.
+
+## 2026-08-09 — Keep product management centred on the catalogue table
+
+The redundant Products-page introduction panel is removed. The catalogue table now puts identity, classification, price, product options, storefront placement, status, and actions in a consistent order so routine product work requires less scanning.
+
+## 2026-08-09 — Give each overview metric an appropriate visualization
+
+Customer registrations use a line trend, order counts use bars, and order value uses a proportion ring. This avoids repeating the same graph treatment for unrelated measures and makes the overview easier to scan.
+
+## 2026-08-09 — Keep product setup focused on two required steps
+
+Product setup now groups catalog details and pricing/presentation into two numbered sections. Storefront placement remains available as the final optional section, while the manual homepage-order field is removed to avoid fragile merchandising order management.
+
+## 2026-08-09 — Search results override the current storefront category filter
+
+Typing in the global storefront search now resets an active category selection and takes the visitor to the catalogue results. This prevents a valid product search from appearing broken because a previous category filter excludes it.
+
+## 2026-08-09 — Use the existing SQLite orders schema for local order management
+
+Order records and their line items are now persisted in the existing SQLite `orders` and `order_items` tables. The schema requires `currency`, so new order inserts explicitly save `AED`. Admins manage the resulting requests from a dedicated Orders page with accepted and rejected terminal states.
+
+## 2026-08-09 — Offer Cash on Delivery only during testing
+
+Checkout now presents only Cash on Delivery. The former card and gateway options were placeholders with no payment-provider integration, so showing them created a misleading checkout choice.
+
+## 2026-08-09 — Make admin analytics time-based
+
+The overview now calculates customer registrations, order count, and order value for today, the last seven days, and the current month. Registration is used rather than login events because login auditing has not been introduced yet.
+
+## 2026-08-09 — Hydrate the session cart before persisting it
+
+The storefront now waits until it has restored session storage before writing the cart back. This prevents a route return from replacing an existing cart with the component's initial empty state.
+
+## 2026-08-09 — Store customer registrations and orders in the local demo database
+
+Customer sign-up now creates a customer account and profile in SQLite, and checkout submits a validated order plus line items to SQLite. The admin console exposes customer records and recent orders. Prices are recalculated server-side from the catalogue rather than accepted from the browser.
+
+## 2026-08-09 — Give each managed brand a public catalogue route
+
+The homepage brand rail links to `/brands/[slug]`, which shows only active products assigned to that managed brand. This keeps supplier browsing shareable and avoids making the homepage filter state do double duty as a public catalogue page.
+
 ## 2026-08-09 — Store admin product uploads locally
 
 The admin product form now accepts JPG, PNG, and WebP files up to 5 MB. Valid files are written beneath `public/product-uploads` and the resulting public path is stored with the product. This supports local development; the temporary Render filesystem still requires object storage for durable production uploads.

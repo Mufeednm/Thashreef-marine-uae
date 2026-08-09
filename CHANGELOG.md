@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Replace the misleading mini-chart treatment with larger, real record-based customer, order, and order-value comparisons; remove the obsolete Workbook import sidebar message.
+- Add optional Arabic name/description fields for products and Arabic names for categories and brands, persisted in SQLite and used by product cards/detail pages when Arabic is selected.
+- Fix the compact storefront header so search can shrink correctly on small phone screens, preventing page-level horizontal scrolling.
+
+- Refine the admin overview analytics layout, remove the overview Add product shortcut, and streamline the Products page around one clearer catalogue table.
+- Use distinct registration, order, and revenue visualizations on the admin overview and remove the Catalog readiness panel.
+- Streamline admin navigation and product setup by removing the Add Product sidebar item and Homepage order field, while placing storefront options last.
+- Simplify the admin header, redesign overview analytics as clear time-period cards, and make storefront global search clear category filters and jump to results.
+- Add admin order management with persisted order requests and Accept/Reject controls.
+- Fix local order saving against the existing SQLite schema and make Cash on Delivery the sole checkout payment option.
+- Add time-based customer-registration, order-volume, and order-value graphs to the admin overview.
+- Restore saved carts only after client hydration, retain registered phone numbers at checkout, and return safe JSON failures from order submission.
+- Add clickable brand catalogue pages, customer registration, stored checkout orders, and an admin customer list.
+- Replace the admin operational-pulse panel with a concise store-activity chart.
 - Replace the admin product image-path field with validated local image uploads.
 - Accept unchecked product-placement checkboxes as disabled values during product validation.
 - Make product-form validation messages explicit and add browser-level required-field guidance.

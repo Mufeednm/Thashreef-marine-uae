@@ -11,5 +11,6 @@ export default async function CheckoutPage(): Promise<ReactElement> {
   const repository = createDemoStoreRepository();
   const user = await restoreSessionUser(repository, await readSessionUser());
   if (!user || user.role !== "customer") return <CheckoutLogin />;
-  return <CheckoutExperience customer={{ email: user.email, name: user.name }} />;
+  const customer = await repository.findCustomerByEmail(user.email);
+  return <CheckoutExperience customer={{ email: user.email, name: user.name, phone: customer?.phone ?? "" }} />;
 }

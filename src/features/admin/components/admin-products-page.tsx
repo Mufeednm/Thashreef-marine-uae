@@ -50,28 +50,11 @@ export function AdminProductsPage({
         />
       </section>
 
-      <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-[#102846]">Catalog pages</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Products are now managed from dedicated pages instead of a single long dashboard.
-            </p>
-          </div>
-          <Link
-            className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[#f05a28] px-5 text-sm font-bold text-white transition hover:bg-[#d94d20]"
-            href="/admin/products/new"
-          >
-            Add product
-          </Link>
-        </div>
-      </section>
-
       <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-bold text-[#102846]">All catalog products</h2>
-            <p className="mt-1 text-sm text-slate-500">{filteredProducts.length} products shown. Filter by a populated category.</p>
+            <p className="mt-1 text-sm text-slate-500">{filteredProducts.length} products shown. Use the category filter to narrow the catalogue.</p>
           </div>
           <label className="flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-600">
             <span className="sr-only">Filter products by category</span>
@@ -89,27 +72,25 @@ export function AdminProductsPage({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left text-sm">
+          <table className="w-full min-w-[1040px] text-left text-sm">
             <thead className="bg-slate-50 text-xs tracking-wide text-slate-500 uppercase">
               <tr>
                 <th className="px-5 py-3 font-bold">Product</th>
-                <th className="px-5 py-3 font-bold">Brand</th>
-                <th className="px-5 py-3 font-bold">Category</th>
+                <th className="px-5 py-3 font-bold">Brand / category</th>
                 <th className="px-5 py-3 font-bold">Price</th>
                 <th className="px-5 py-3 font-bold">Variants</th>
+                <th className="px-5 py-3 font-bold">Placement</th>
                 <th className="px-5 py-3 font-bold">Status</th>
-                <th className="px-5 py-3 font-bold"><span className="sr-only">Actions</span></th>
+                <th className="px-5 py-3 font-bold">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredProducts.map((product) => (
                 <tr className="hover:bg-slate-50" key={product.id}>
-                  <td className="max-w-[300px] px-5 py-4">
-                    <p className="truncate font-bold text-slate-800">{product.name}</p>
-                    <p className="mt-1 text-xs text-slate-500">{product.sku}</p>
+                  <td className="max-w-[320px] px-5 py-4">
+                    <div className="flex items-center gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#e8f1fa] text-xs font-extrabold text-[#0e568f]">{product.name.slice(0, 2).toUpperCase()}</span><div className="min-w-0"><p className="truncate font-bold text-slate-800">{product.name}</p><p className="mt-1 font-mono text-xs text-slate-500">{product.sku}</p></div></div>
                   </td>
-                  <td className="px-5 py-4 text-slate-600">{product.brand}</td>
-                  <td className="px-5 py-4 text-slate-600">{product.category}</td>
+                  <td className="px-5 py-4"><p className="font-semibold text-slate-700">{product.brand}</p><p className="mt-1 text-xs text-slate-500">{product.category}</p></td>
                   <td className="px-5 py-4">
                     <p className="font-semibold text-slate-800">
                       {formatAedFromCents(product.priceAedCents)}
@@ -120,10 +101,10 @@ export function AdminProductsPage({
                       </p>
                     ) : null}
                   </td>
-                  <td className="px-5 py-4"><ProductActions product={product} /></td>
                   <td className="px-5 py-4 text-slate-600">
-                    {variantCountByProduct.get(product.id) ?? (product.hasVariants ? 1 : 0)}
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{variantCountByProduct.get(product.id) ?? (product.hasVariants ? 1 : 0)} option{(variantCountByProduct.get(product.id) ?? (product.hasVariants ? 1 : 0)) === 1 ? "" : "s"}</span>
                   </td>
+                  <td className="px-5 py-4"><div className="flex max-w-40 flex-wrap gap-1">{product.isFeatured ? <Badge label="Featured" tone="orange" /> : null}{product.isNewArrival ? <Badge label="New" tone="blue" /> : null}{product.isTopSelling ? <Badge label="Top" tone="green" /> : null}{!product.isFeatured && !product.isNewArrival && !product.isTopSelling ? <span className="text-xs text-slate-400">Standard</span> : null}</div></td>
                   <td className="px-5 py-4">
                     <div className="flex gap-2">
                       <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
@@ -136,6 +117,7 @@ export function AdminProductsPage({
                       ) : null}
                     </div>
                   </td>
+                  <td className="px-5 py-4"><ProductActions product={product} /></td>
                 </tr>
               ))}
               {filteredProducts.length === 0 ? (
@@ -151,8 +133,10 @@ export function AdminProductsPage({
 
 function ProductActions({ product }: { product: Product }): ReactElement {
   const [state, action, pending] = useActionState<CreateProductActionState, FormData>(deleteProductAction, initialCreateProductActionState);
-  return <div className="flex min-w-36 flex-col items-start gap-2"><Link className="min-h-10 content-center rounded-xl bg-[#102846] px-3 text-xs font-bold text-white transition hover:bg-[#0e568f]" href={`/admin/products/${product.id}`}>Edit</Link><form action={action} onSubmit={(event) => { if (!window.confirm(`Delete ${product.name}? This cannot be undone.`)) event.preventDefault(); }}><input name="id" type="hidden" value={product.id} /><button className="min-h-10 text-xs font-bold text-rose-700 underline underline-offset-4 disabled:text-slate-400" disabled={pending} type="submit">{pending ? "Deleting..." : "Delete"}</button></form>{state.message ? <span aria-live="polite" className="text-xs text-rose-700">{state.status === "error" ? state.message : "Deleted"}</span> : null}</div>;
+  return <div className="flex min-w-44 items-center gap-3"><Link className="inline-flex min-h-10 items-center rounded-xl bg-[#102846] px-3 text-xs font-bold text-white transition hover:bg-[#0e568f]" href={`/admin/products/${product.id}`}>Edit</Link><form action={action} onSubmit={(event) => { if (!window.confirm(`Delete ${product.name}? This cannot be undone.`)) event.preventDefault(); }}><input name="id" type="hidden" value={product.id} /><button className="min-h-10 text-xs font-bold text-rose-700 underline underline-offset-4 disabled:text-slate-400" disabled={pending} type="submit">{pending ? "Deleting..." : "Delete"}</button></form>{state.message ? <span aria-live="polite" className="text-xs text-rose-700">{state.status === "error" ? state.message : "Deleted"}</span> : null}</div>;
 }
+
+function Badge({ label, tone }: { label: string; tone: "blue" | "green" | "orange" }): ReactElement { const styles = { blue: "bg-sky-50 text-sky-700", green: "bg-emerald-50 text-emerald-700", orange: "bg-orange-50 text-orange-700" }; return <span className={`rounded-full px-2 py-1 text-[10px] font-extrabold ${styles[tone]}`}>{label}</span>; }
 
 function SummaryCard({ label, value }: { label: string; value: string }): ReactElement {
   return (

@@ -3,9 +3,11 @@ export interface CreateProductActionState {
     brand?: string[];
     categoryId?: string[];
     description?: string[];
+    descriptionAr?: string[];
     imageUrl?: string[];
     imageFile?: string[];
     name?: string[];
+    nameAr?: string[];
     regularPriceAed?: string[];
     salePriceAed?: string[];
     sku?: string[];
@@ -25,6 +27,7 @@ export interface CreateCategoryActionState {
     displayOrder?: string[];
     isFeatured?: string[];
     name?: string[];
+    nameAr?: string[];
     parentCategoryId?: string[];
     logoText?: string[];
   };

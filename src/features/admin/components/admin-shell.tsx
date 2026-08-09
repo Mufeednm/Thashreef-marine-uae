@@ -45,9 +45,6 @@ export function AdminShell({
               </p>
             </div>
           </div>
-          <div className="hidden max-w-xl flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-400 md:block">
-            Manage products, categories, orders, customers, and pricing from dedicated pages.
-          </div>
           <form action={logoutAction}>
             <button
               className="min-h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
@@ -66,12 +63,6 @@ export function AdminShell({
           </p>
           <div className="mt-3">
             <AdminNavigation />
-          </div>
-          <div className="mt-8 rounded-2xl bg-[#102846] p-4 text-white">
-            <p className="text-xs font-semibold text-slate-300">Workbook import</p>
-            <p className="mt-2 text-sm leading-5">
-              Categories, products, variants, users, orders, and coupons are synced into SQLite.
-            </p>
           </div>
         </aside>
 

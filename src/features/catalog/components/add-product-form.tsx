@@ -47,19 +47,8 @@ export function AddProductForm({ brands, categories, product }: AddProductFormPr
       </section>
 
       <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
-        <h3 className="text-lg font-bold text-[#102846]">3. Storefront placement</h3>
-        <p className="mt-1 text-sm text-slate-500">Choose the homepage rails this product should appear in.</p>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          {[["isFeatured", "Featured product"], ["isNewArrival", "New arrival"], ["isTopSelling", "Top selling"], ["isBestDeal", "Best deal"], ["isBannerProduct", "Banner product"]].map(([name, label]) => (
-            <label className="flex min-h-12 items-center gap-3 rounded-2xl bg-slate-50 px-4 text-sm font-semibold text-slate-700" key={name}><input className="size-4 accent-[#f05a28]" defaultChecked={Boolean(product?.[name as keyof Product])} name={name} type="checkbox" />{label}</label>
-          ))}
-          <Field defaultValue={product?.homepageOrder ?? 0} inputMode="numeric" label="Homepage order" name="homepageOrder" placeholder="0" />
-        </div>
-      </section>
-
-      <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
         <div className="border-b border-slate-100 pb-4">
-          <h3 className="text-lg font-bold text-[#102846]">1. Product identity</h3>
+          <h3 className="text-lg font-bold text-[#102846]">1. Product details</h3>
           <p className="mt-1 text-sm text-slate-500">
             Name the product, choose the category, and describe what customers are buying.
           </p>
@@ -73,6 +62,13 @@ export function AddProductForm({ brands, categories, product }: AddProductFormPr
             placeholder="Victron Blue Smart Charger 12V 15A"
             defaultValue={product?.name}
             required
+          />
+          <Field
+            defaultValue={product?.nameAr ?? undefined}
+            error={state.fieldErrors?.nameAr?.[0]}
+            label="Product name (Arabic)"
+            name="nameAr"
+            placeholder="اسم المنتج بالعربية"
           />
           <BrandSelect brands={brands} currentBrand={product?.brand} error={state.fieldErrors?.brand?.[0]} />
           <Field
@@ -105,6 +101,19 @@ export function AddProductForm({ brands, categories, product }: AddProductFormPr
             {state.fieldErrors?.description?.[0] ? (
               <p className="text-sm text-rose-600">{state.fieldErrors.description[0]}</p>
             ) : null}
+          </label>
+        </div>
+        <div className="mt-5">
+          <label className="block space-y-2">
+            <span className="text-sm font-semibold text-slate-700">Description (Arabic)</span>
+            <textarea
+              className="min-h-32 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0e568f] focus:bg-white"
+              defaultValue={product?.descriptionAr ?? undefined}
+              dir="rtl"
+              name="descriptionAr"
+              placeholder="وصف مختصر ومفيد للمنتج باللغة العربية"
+            />
+            {state.fieldErrors?.descriptionAr?.[0] ? <p className="text-sm text-rose-600">{state.fieldErrors.descriptionAr[0]}</p> : null}
           </label>
         </div>
       </section>
@@ -142,6 +151,16 @@ export function AddProductForm({ brands, categories, product }: AddProductFormPr
             {product ? <p className="text-xs text-slate-500">Leave empty to keep the current image.</p> : null}
             {state.fieldErrors?.imageFile?.[0] ? <p className="text-sm text-rose-600">{state.fieldErrors.imageFile[0]}</p> : null}
           </label>
+        </div>
+      </section>
+
+      <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
+        <h3 className="text-lg font-bold text-[#102846]">Storefront placement</h3>
+        <p className="mt-1 text-sm text-slate-500">Choose where this product should be highlighted on the storefront.</p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          {[['isFeatured', 'Featured product'], ['isNewArrival', 'New arrival'], ['isTopSelling', 'Top selling'], ['isBestDeal', 'Best deal'], ['isBannerProduct', 'Banner product']].map(([name, label]) => (
+            <label className="flex min-h-12 items-center gap-3 rounded-2xl bg-slate-50 px-4 text-sm font-semibold text-slate-700" key={name}><input className="size-4 accent-[#f05a28]" defaultChecked={Boolean(product?.[name as keyof Product])} name={name} type="checkbox" />{label}</label>
+          ))}
         </div>
       </section>
 

@@ -1,6 +1,7 @@
 export interface Product {
   id: string;
   name: string;
+  nameAr: string | null;
   slug: string;
   sku: string;
   brand: string;
@@ -9,6 +10,7 @@ export interface Product {
   mainCategory?: string | null;
   mainCategoryId?: number | null;
   description: string;
+  descriptionAr: string | null;
   imageUrl: string;
   secondaryImageUrl?: string | null;
   regularPriceAedCents: number;
@@ -29,10 +31,12 @@ export interface Product {
 
 export interface CreateProductInput {
   name: string;
+  nameAr?: string | null;
   sku: string;
   brand: string;
   categoryId: number;
   description: string;
+  descriptionAr?: string | null;
   imageUrl?: string;
   regularPriceAedCents: number;
   salePriceAedCents?: number | null;

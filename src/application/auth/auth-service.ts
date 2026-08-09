@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
+import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import type { DemoStoreRepository } from "@/domain/demo-store/demo-store-repository";
 import type { SessionUser } from "@/domain/auth/user";
 import { toSessionUser } from "@/domain/auth/user";
@@ -18,11 +18,21 @@ export async function authenticateUser(
     return null;
   }
 
-  if (!safeCompare(user.password, credentials.password)) {
+  if (!verifyPassword(user.password, credentials.password)) {
     return null;
   }
 
   return toSessionUser(user);
+}
+
+export async function registerCustomer(
+  repository: DemoStoreRepository,
+  input: { email: string; name: string; password: string; phone: string },
+): Promise<SessionUser | null> {
+  const salt = randomBytes(16).toString("hex");
+  const password = `scrypt$${salt}$${scryptSync(input.password, salt, 64).toString("hex")}`;
+  const user = await repository.createCustomer({ ...input, password });
+  return user ? toSessionUser(user) : null;
 }
 
 export async function restoreSessionUser(
@@ -64,4 +74,11 @@ function safeCompare(leftValue: string, rightValue: string): boolean {
   }
 
   return timingSafeEqual(left, right);
+}
+
+function verifyPassword(storedPassword: string, submittedPassword: string): boolean {
+  if (!storedPassword.startsWith("scrypt$")) return safeCompare(storedPassword, submittedPassword);
+  const [, salt, expectedHash] = storedPassword.split("$");
+  if (!salt || !expectedHash) return false;
+  return safeCompare(expectedHash, scryptSync(submittedPassword, salt, 64).toString("hex"));
 }

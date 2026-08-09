@@ -1,6 +1,7 @@
 export interface Category {
   id: number;
   name: string;
+  nameAr: string | null;
   slug: string;
   parentCategoryId: number | null;
   bannerImageUrl: string | null;
@@ -23,6 +24,7 @@ export interface CreateCategoryInput {
   showOnHomepage?: boolean;
   homepageOrder?: number;
   name: string;
+  nameAr?: string | null;
   parentCategoryId?: number | null;
 }
 

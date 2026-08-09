@@ -1,10 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { authenticateUser } from "@/application/auth/auth-service";
+import { authenticateUser, registerCustomer } from "@/application/auth/auth-service";
 import { createDemoStoreRepository } from "@/infrastructure/demo-store/file-demo-store-repository";
 import { clearSessionCookie, writeSessionCookie } from "@/infrastructure/auth/session-cookie";
-import { loginSchema } from "@/features/auth/auth.schemas";
+import { loginSchema, registrationSchema } from "@/features/auth/auth.schemas";
 import type { LoginActionState } from "@/features/auth/auth.types";
 
 export async function loginAction(
@@ -45,4 +45,24 @@ export async function loginAction(
 export async function logoutAction(): Promise<void> {
   await clearSessionCookie();
   redirect("/");
+}
+
+export async function registerAction(
+  _previousState: LoginActionState,
+  formData: FormData,
+): Promise<LoginActionState> {
+  const parsed = registrationSchema.safeParse({
+    email: formData.get("email"),
+    name: formData.get("name"),
+    password: formData.get("password"),
+    phone: formData.get("phone"),
+  });
+  if (!parsed.success) {
+    return { fieldErrors: parsed.error.flatten().fieldErrors, message: "Please correct the highlighted details.", status: "error" };
+  }
+  const user = await registerCustomer(createDemoStoreRepository(), parsed.data);
+  if (!user) return { message: "An account with this email already exists. Please sign in instead.", status: "error" };
+  await writeSessionCookie(user);
+  const redirectTo = formData.get("redirectTo");
+  redirect(typeof redirectTo === "string" && redirectTo.startsWith("/") ? redirectTo : "/");
 }

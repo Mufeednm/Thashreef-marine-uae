@@ -3,12 +3,14 @@ import type { Category } from "@/domain/catalog/category";
 import type { Product } from "@/domain/catalog/product";
 import type { ProductVariant } from "@/domain/catalog/product-variant";
 import type {
+  AdminActivityMetrics,
   AdminOverviewMetrics,
   AdminRecentOrder,
 } from "@/domain/demo-store/demo-store-repository";
 import { formatAedFromCents } from "@/shared/utils/currency";
 
 interface AdminOverviewPageProps {
+  activity: AdminActivityMetrics;
   categories: Category[];
   metrics: AdminOverviewMetrics;
   products: Product[];
@@ -17,15 +19,13 @@ interface AdminOverviewPageProps {
 }
 
 export function AdminOverviewPage({
+  activity,
   categories,
   metrics,
   products,
   recentOrders,
   variants,
 }: AdminOverviewPageProps): ReactElement {
-  const featuredProducts = products.filter((product) => product.isFeatured).length;
-  const featuredCategories = categories.filter((category) => category.isFeatured).slice(0, 6);
-
   return (
     <div className="space-y-7">
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -44,43 +44,31 @@ export function AdminOverviewPage({
           label="Revenue in workbook orders"
           value={formatAedFromCents(metrics.totalRevenueAedCents)}
         />
+        <Metric detail="Registered storefront users" label="Customers" value={metrics.customerProfiles.toLocaleString("en-AE")} />
       </section>
 
       <section>
-        <article className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+        <article className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-[#102846]">Operational pulse</h2>
+            <div className="p-6">
+              <h2 className="text-lg font-bold text-[#102846]">Store activity</h2>
               <p className="mt-1 text-sm text-slate-500">
-                A quick look at the imported workbook data and current catalog readiness.
+                A simple snapshot of catalog, customer and order activity.
               </p>
             </div>
-            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+            <span className="mr-6 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
               Synced
             </span>
           </div>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <Highlight
-              label="Customer profiles"
-              value={metrics.customerProfiles.toLocaleString("en-AE")}
-            />
-            <Highlight label="Workbook orders" value={metrics.orderCount.toLocaleString("en-AE")} />
-            <Highlight label="Featured products" value={featuredProducts.toString()} />
-            <Highlight label="Featured categories" value={featuredCategories.length.toString()} />
-          </div>
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            {featuredCategories.map((category) => (
-              <div className="rounded-2xl bg-slate-50 px-4 py-4" key={category.id}>
-                <p className="text-sm font-bold text-slate-800">{category.name}</p>
-                <p className="mt-1 text-xs text-slate-500">{category.slug}</p>
-              </div>
-            ))}
+          <div className="grid border-t border-slate-200 xl:grid-cols-[1.45fr_0.9fr]">
+            <ActivityComparison activity={activity} />
+            <RevenueSummary values={activity.revenueAedCents} />
           </div>
         </article>
 
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+      <section>
         <article className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 p-5">
             <h2 className="text-lg font-bold text-[#102846]">Recent orders</h2>
@@ -120,35 +108,25 @@ export function AdminOverviewPage({
           </div>
         </article>
 
-        <article className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-bold text-[#102846]">Catalog readiness</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Useful checkpoints before expanding the admin tools further.
-          </p>
-          <ul className="mt-5 space-y-3 text-sm text-slate-600">
-            <li className="rounded-2xl bg-slate-50 px-4 py-3">
-              All workbook product rows are synced into SQLite.
-            </li>
-            <li className="rounded-2xl bg-slate-50 px-4 py-3">
-              Variants, orders, coupons, and customer profiles are available for future pages.
-            </li>
-            <li className="rounded-2xl bg-slate-50 px-4 py-3">
-              New admin-created products write into the same SQLite catalog.
-            </li>
-          </ul>
-        </article>
       </section>
     </div>
   );
 }
 
-function Highlight({ label, value }: { label: string; value: string }): ReactElement {
-  return (
-    <div className="rounded-2xl bg-slate-50 px-4 py-4">
-      <p className="text-xs font-bold tracking-[0.18em] text-slate-500 uppercase">{label}</p>
-      <p className="mt-3 text-2xl font-extrabold tracking-tight text-[#102846]">{value}</p>
-    </div>
-  );
+function ActivityComparison({ activity }: { activity: AdminActivityMetrics }): ReactElement {
+  const periods = ["Today", "Last 7 days", "This month"];
+  const rows = [
+    { color: "bg-sky-600", label: "New customers", values: [activity.customerRegistrations.today, activity.customerRegistrations.week, activity.customerRegistrations.month] },
+    { color: "bg-emerald-600", label: "Orders received", values: [activity.orders.today, activity.orders.week, activity.orders.month] },
+  ];
+  const max = Math.max(...rows.flatMap((row) => row.values), 1);
+  return <article className="p-6 sm:p-8"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="text-xl font-extrabold tracking-tight text-[#102846]">Customer and order activity</h3><p className="mt-1 text-sm text-slate-500">Live totals from the customer and order records in SQLite.</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">Current periods</span></div><div className="mt-8 space-y-7" role="img" aria-label="Comparison of customer registrations and orders for today, the last seven days, and this month">{rows.map((row) => <div key={row.label}><div className="mb-3 flex items-center gap-2"><span className={`size-2.5 rounded-full ${row.color}`} /><p className="text-sm font-bold text-slate-700">{row.label}</p></div><div className="space-y-3">{row.values.map((value, index) => <div className="grid grid-cols-[92px_1fr_auto] items-center gap-3" key={periods[index]}><span className="text-xs font-semibold text-slate-500">{periods[index]}</span><div className="h-3 overflow-hidden rounded-full bg-slate-100"><div className={`h-full min-w-1 rounded-full ${row.color}`} style={{ width: `${Math.max((value / max) * 100, value ? 4 : 0)}%` }} /></div><span className="w-8 text-right text-sm font-extrabold tabular-nums text-[#102846]">{value}</span></div>)}</div></div>)}</div></article>;
+}
+
+function RevenueSummary({ values }: { values: { today: number; week: number; month: number } }): ReactElement {
+  const periods = [{ label: "Today", value: values.today }, { label: "Last 7 days", value: values.week }, { label: "This month", value: values.month }];
+  const max = Math.max(...periods.map((period) => period.value), 1);
+  return <article className="border-t border-slate-200 bg-slate-50/70 p-6 sm:p-8 xl:border-t-0 xl:border-l"><p className="text-sm font-bold text-[#102846]">Order value</p><p className="mt-2 text-3xl font-extrabold tracking-tight text-[#102846]">{formatAedFromCents(values.month)}</p><p className="mt-1 text-sm text-slate-500">Total received this month</p><div className="mt-8 flex h-36 items-end gap-4" aria-label="Order value comparison by period" role="img">{periods.map((period) => <div className="flex flex-1 flex-col items-center gap-2" key={period.label}><span className="text-center text-xs font-bold tabular-nums text-slate-700">{formatAedFromCents(period.value)}</span><div className="flex h-20 w-full items-end rounded-t-xl bg-slate-200 p-1"><div className="w-full rounded-lg bg-gradient-to-t from-[#f05a28] to-[#fb923c]" style={{ height: `${Math.max((period.value / max) * 100, period.value ? 8 : 0)}%` }} /></div><span className="text-center text-[11px] font-bold text-slate-500">{period.label}</span></div>)}</div><p className="mt-7 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">Values are order totals, not forecasts. They update as orders are recorded.</p></article>;
 }
 
 function Metric({

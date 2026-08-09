@@ -22,6 +22,12 @@ export interface AdminOverviewMetrics {
   totalRevenueAedCents: number;
 }
 
+export interface AdminActivityMetrics {
+  customerRegistrations: { today: number; week: number; month: number };
+  orders: { today: number; week: number; month: number };
+  revenueAedCents: { today: number; week: number; month: number };
+}
+
 export interface AdminRecentOrder {
   id: number;
   customerName: string;
@@ -30,9 +36,45 @@ export interface AdminRecentOrder {
   totalAedCents: number;
 }
 
+export interface AdminOrder extends AdminRecentOrder {
+  customerEmail: string;
+  paymentMethod: string;
+  shippingZone: string;
+}
+
+export interface AdminCustomer {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  dateJoined: string | null;
+  status: string;
+}
+
+export interface CreateCustomerInput {
+  name: string;
+  phone: string;
+  email: string;
+  password: string;
+}
+
+export interface CreateOrderInput {
+  customerEmail: string;
+  customerName: string;
+  phone: string;
+  emirate: string;
+  paymentMethod: string;
+  shippingFeeAedCents: number;
+  subtotalAedCents: number;
+  totalAedCents: number;
+  vatAedCents: number;
+  lines: Array<{ productId: string; name: string; quantity: number; unitPriceAedCents: number }>;
+}
+
 export interface Brand {
   id: number;
   name: string;
+  nameAr: string | null;
   slug: string;
   logoText: string;
   displayOrder: number;
@@ -62,16 +104,23 @@ export interface DemoStoreRepository {
   deleteCategory(id: number): Promise<void>;
   deleteProduct(id: string): Promise<void>;
   addProduct(input: PersistedProductInput): Promise<Product>;
+  createCustomer(input: CreateCustomerInput): Promise<DemoUser | null>;
+  createOrder(input: CreateOrderInput): Promise<AdminRecentOrder>;
   findUserByEmail(emailOrUsername: string): Promise<DemoUser | null>;
   findUserById(id: string): Promise<DemoUser | null>;
+  findCustomerByEmail(email: string): Promise<AdminCustomer | null>;
   getAdminOverviewMetrics(): Promise<AdminOverviewMetrics>;
+  getAdminActivityMetrics(): Promise<AdminActivityMetrics>;
   listBrands(): Promise<Brand[]>;
   listHomepageBanners(): Promise<HomepageBanner[]>;
   listCategories(): Promise<Category[]>;
+  listCustomers(limit: number): Promise<AdminCustomer[]>;
   listCategoryFields(): Promise<CategoryField[]>;
   listProducts(): Promise<Product[]>;
   listProductVariants(): Promise<ProductVariant[]>;
   listRecentOrders(limit: number): Promise<AdminRecentOrder[]>;
+  listOrders(limit: number): Promise<AdminOrder[]>;
+  updateOrderStatus(id: number, status: "accepted" | "rejected"): Promise<void>;
   updateBrand(id: number, input: Omit<Brand, "id" | "slug">): Promise<Brand | null>;
   updateCategory(
     id: number,

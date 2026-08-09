@@ -52,6 +52,12 @@ export function CategoryManager({ categories, fields }: CategoryManagerProps): R
           name="name"
           placeholder="Shipping accessories"
         />
+        <Field
+          error={state.fieldErrors?.nameAr?.[0]}
+          label="Category name (Arabic)"
+          name="nameAr"
+          placeholder="اسم الفئة بالعربية"
+        />
 
         <label className="block space-y-2">
           <span className="text-sm font-semibold text-slate-700">Parent category</span>
@@ -169,6 +175,7 @@ function CategoryRow({ category, categories, fields }: { category: Category; cat
       <form action={action} className="mt-4 grid gap-4 border-t border-slate-200 pt-4 sm:grid-cols-2">
         <input name="id" type="hidden" value={category.id} />
         <Field defaultValue={category.name} label="Category name" name="name" placeholder="Category name" />
+        <Field defaultValue={category.nameAr ?? ""} label="Category name (Arabic)" name="nameAr" placeholder="اسم الفئة بالعربية" />
         <label className="block space-y-2"><span className="text-sm font-semibold text-slate-700">Parent category</span><select className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-[#0e568f]" defaultValue={category.parentCategoryId ?? ""} name="parentCategoryId"><option value="">No parent category</option>{parentOptions.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}</select></label>
         <Field defaultValue={String(category.displayOrder)} inputMode="numeric" label="Display order" name="displayOrder" placeholder="0" />
         <Field defaultValue={category.bannerImageUrl ?? ""} label="Banner image URL" name="bannerImageUrl" placeholder="Optional image URL" />
