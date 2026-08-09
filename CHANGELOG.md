@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Replace the admin product image-path field with validated local image uploads.
+- Accept unchecked product-placement checkboxes as disabled values during product validation.
+- Make product-form validation messages explicit and add browser-level required-field guidance.
+- Add protected product edit/delete controls and a dedicated admin sign-in route.
+- Remove stock controls, stock badges, and stock-based order blocking from the storefront and current admin pages.
+- Remove the storefront customer-review and newsletter sign-up sections.
 - Configure Render to compile SQLite for its Linux runtime during the test deployment build.
 
 ## [Unreleased]

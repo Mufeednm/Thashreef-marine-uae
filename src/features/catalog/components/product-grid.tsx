@@ -53,9 +53,8 @@ export function ProductGrid({ products }: ProductGridProps): ReactElement {
             <div className="space-y-4 px-5 py-5">
               <p className="text-sm leading-6 text-slate-600">{product.description}</p>
 
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <Stat label="Price" value={formatAedFromCents(product.priceAedCents)} />
-                <Stat label="Stock" value={`${product.stockQuantity} units`} />
                 <Stat
                   label="Added"
                   value={new Date(product.createdAt).toLocaleDateString("en-AE", {

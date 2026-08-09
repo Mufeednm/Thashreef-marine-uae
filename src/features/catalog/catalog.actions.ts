@@ -1,14 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { randomUUID } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { z } from "zod";
 import {
   createBrandForAdmin,
   createCategoryForAdmin,
   createProductForAdmin,
+  deleteProductForAdmin,
   deleteBrandForAdmin,
   deleteCategoryForAdmin,
   updateBrandForAdmin,
   updateCategoryForAdmin,
+  updateProductForAdmin,
 } from "@/application/catalog/catalog-service";
 import { requireAdminUser } from "@/application/auth/auth-service";
 import { readSessionUser } from "@/infrastructure/auth/session-cookie";
@@ -18,6 +24,18 @@ import type {
   CreateCategoryActionState,
   CreateProductActionState,
 } from "@/features/catalog/catalog.types";
+
+const productImageSchema = z.object({
+  imageFile: z
+    .instanceof(File)
+    .nullable()
+    .refine((file) => !file || file.size === 0 || file.size <= 5 * 1024 * 1024, {
+      error: "Image must be 5 MB or smaller.",
+    })
+    .refine((file) => !file || file.size === 0 || ["image/jpeg", "image/png", "image/webp"].includes(file.type), {
+      error: "Upload a JPG, PNG, or WebP image.",
+    }),
+});
 
 export async function createProductAction(
   _previousState: CreateProductActionState,
@@ -33,18 +51,21 @@ export async function createProductAction(
     isTopSelling: formData.get("isTopSelling"),
     categoryId: formData.get("categoryId"),
     description: formData.get("description"),
-    imageUrl: formData.get("imageUrl"),
+    imageUrl: "",
     name: formData.get("name"),
     regularPriceAed: formData.get("regularPriceAed"),
     salePriceAed: formData.get("salePriceAed"),
     sku: formData.get("sku"),
-    stockQuantity: formData.get("stockQuantity"),
   });
 
-  if (!parsedProduct.success) {
+  const parsedImage = productImageSchema.safeParse({ imageFile: formData.get("imageFile") });
+
+  if (!parsedProduct.success || !parsedImage.success) {
+    const fieldErrors = parsedProduct.success ? {} : parsedProduct.error.flatten().fieldErrors;
+    const imageErrors = parsedImage.success ? {} : parsedImage.error.flatten().fieldErrors;
     return {
-      fieldErrors: parsedProduct.error.flatten().fieldErrors,
-      message: "Please correct the product fields and try again.",
+      fieldErrors: { ...fieldErrors, ...imageErrors },
+      message: productValidationMessage({ ...fieldErrors, ...imageErrors }),
       status: "error",
     };
   }
@@ -63,7 +84,7 @@ export async function createProductAction(
     brand: parsedProduct.data.brand,
     categoryId: parsedProduct.data.categoryId,
     description: parsedProduct.data.description,
-    imageUrl: parsedProduct.data.imageUrl?.trim() || undefined,
+    imageUrl: await persistProductImage(parsedImage.data.imageFile),
     homepageOrder: parsedProduct.data.homepageOrder,
     isBannerProduct: parsedProduct.data.isBannerProduct,
     isBestDeal: parsedProduct.data.isBestDeal,
@@ -77,7 +98,8 @@ export async function createProductAction(
         ? null
         : Math.round(parsedProduct.data.salePriceAed * 100),
     sku: parsedProduct.data.sku.toUpperCase(),
-    stockQuantity: parsedProduct.data.stockQuantity,
+    // Kept only for legacy SQLite compatibility; orders are accepted without stock checks.
+    stockQuantity: 0,
   });
 
   if (!result.ok) {
@@ -103,6 +125,58 @@ export async function createProductAction(
     message: `${result.product.name} is now live in the local catalog.`,
     status: "success",
   };
+}
+
+export async function updateProductAction(_previousState: CreateProductActionState, formData: FormData): Promise<CreateProductActionState> {
+  const id = z.string().uuid().safeParse(formData.get("id"));
+  const parsed = createProductSchema.safeParse(productFormValues(formData));
+  const parsedImage = productImageSchema.safeParse({ imageFile: formData.get("imageFile") });
+  if (!id.success || !parsed.success || !parsedImage.success) {
+    const fieldErrors = parsed.success ? undefined : parsed.error.flatten().fieldErrors;
+    const imageErrors = parsedImage.success ? undefined : parsedImage.error.flatten().fieldErrors;
+    return { fieldErrors: { ...fieldErrors, ...imageErrors }, message: imageErrors ? productValidationMessage(imageErrors) : fieldErrors ? productValidationMessage(fieldErrors) : "This product record is invalid.", status: "error" };
+  }
+  const repository = createDemoStoreRepository();
+  const uploadedImage = await persistProductImage(parsedImage.data.imageFile);
+  const result = await updateProductForAdmin(repository, await requireAdminUser(repository, await readSessionUser()), id.data, { ...toProductInput(parsed.data), imageUrl: uploadedImage });
+  if (!result.ok) return { message: "This product could not be updated. Check its brand, category, and SKU.", status: "error" };
+  revalidateCatalogAdmin();
+  revalidatePath(`/products/${result.product.slug}`);
+  return { message: `${result.product.name} has been updated.`, status: "success" };
+}
+
+export async function deleteProductAction(_previousState: CreateProductActionState, formData: FormData): Promise<CreateProductActionState> {
+  const id = z.string().uuid().safeParse(formData.get("id"));
+  if (!id.success) return { message: "Invalid product record.", status: "error" };
+  const repository = createDemoStoreRepository();
+  const result = await deleteProductForAdmin(repository, await requireAdminUser(repository, await readSessionUser()), id.data);
+  if (!result.ok) return { message: "This product could not be deleted.", status: "error" };
+  revalidateCatalogAdmin();
+  return { message: "Product deleted from the catalog.", status: "success" };
+}
+
+function productFormValues(formData: FormData) {
+  return { brand: formData.get("brand"), homepageOrder: formData.get("homepageOrder"), isBannerProduct: formData.get("isBannerProduct"), isBestDeal: formData.get("isBestDeal"), isFeatured: formData.get("isFeatured"), isNewArrival: formData.get("isNewArrival"), isTopSelling: formData.get("isTopSelling"), categoryId: formData.get("categoryId"), description: formData.get("description"), imageUrl: "", name: formData.get("name"), regularPriceAed: formData.get("regularPriceAed"), salePriceAed: formData.get("salePriceAed"), sku: formData.get("sku") };
+}
+
+function toProductInput(product: z.infer<typeof createProductSchema>) {
+  return { ...product, imageUrl: product.imageUrl?.trim() || undefined, regularPriceAedCents: Math.round(product.regularPriceAed * 100), salePriceAedCents: product.salePriceAed === null ? null : Math.round(product.salePriceAed * 100), sku: product.sku.toUpperCase(), stockQuantity: 0 };
+}
+
+function productValidationMessage(fieldErrors: Record<string, string[] | undefined>): string {
+  const messages = Object.values(fieldErrors).flatMap((messages) => messages ?? []);
+  return messages.length > 0 ? messages.join(" ") : "Please correct the highlighted product fields and try again.";
+}
+
+async function persistProductImage(file: File | null): Promise<string | undefined> {
+  if (!file || file.size === 0) return undefined;
+  const extension = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[file.type];
+  if (!extension) return undefined;
+  const uploadsDirectory = path.join(process.cwd(), "public", "product-uploads");
+  await mkdir(uploadsDirectory, { recursive: true });
+  const fileName = `${randomUUID()}.${extension}`;
+  await writeFile(path.join(uploadsDirectory, fileName), Buffer.from(await file.arrayBuffer()));
+  return `/product-uploads/${fileName}`;
 }
 
 async function getAdminContext() {

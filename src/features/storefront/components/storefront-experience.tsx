@@ -184,24 +184,6 @@ const brandTiles: BrandTile[] = [
   { label: "Jabsco", tone: "from-cyan-700 to-blue-500" },
 ];
 
-const testimonials = [
-  {
-    quote:
-      "The catalogue feels clear and practical. We can find life-saving gear, fenders and electrical items without hunting through boat listings.",
-    role: "Marine workshop buyer",
-  },
-  {
-    quote:
-      "Fast browsing, strong product cards and useful categories. This is the kind of supplier UI crews actually need.",
-    role: "Yacht service coordinator",
-  },
-  {
-    quote:
-      "The category navbar and search make bulk ordering easier, especially for safety and deck hardware stock.",
-    role: "Retail procurement lead",
-  },
-];
-
 export function StorefrontExperience({
   accountName,
   banners,
@@ -290,7 +272,7 @@ export function StorefrontExperience({
     () =>
       products.some((product) => product.isTopSelling)
         ? products.filter((product) => product.isTopSelling).sort((a, b) => a.homepageOrder - b.homepageOrder).slice(0, 10)
-        : [...products].sort((left, right) => right.stockQuantity - left.stockQuantity).slice(0, 10),
+        : [...products].sort((left, right) => left.homepageOrder - right.homepageOrder).slice(0, 10),
     [products],
   );
   const newArrivals = useMemo(
@@ -434,8 +416,8 @@ export function StorefrontExperience({
           imageAlt="Marine accessories arranged for maintenance work"
           imageUrl="/product-images/marine-essential.svg"
           onClick={() => setLoginOpen(true)}
-          text="Bundle safety gear, pumps, electrical accessories, fenders and cleaning stock for service teams with a faster quote flow."
-          title="Marine accessories, stocked for practical UAE operations."
+          text="Bundle safety gear, pumps, electrical accessories, fenders and cleaning essentials for service teams with a faster quote flow."
+          title="Marine accessories for practical UAE operations."
         />
 
         <ProductCarousel
@@ -454,7 +436,7 @@ export function StorefrontExperience({
         />
         <ProductCarousel
           addToCart={addToCart}
-          eyebrow="Fresh stock"
+          eyebrow="Fresh arrivals"
           products={newArrivals}
           subtitle="Recently synced products from the Thashreef Marine UAE catalogue."
           title="New Arrivals"
@@ -555,9 +537,7 @@ export function StorefrontExperience({
         </section>
 
         <WhyChooseUs />
-        <Testimonials />
         <ProjectGallery />
-        <Newsletter />
       </main>
 
       <Footer />
@@ -889,7 +869,7 @@ function TrustStrip(): ReactElement {
   return (
     <section className="border-y border-slate-200 bg-white">
       <div className="mx-auto grid max-w-[1480px] gap-0 px-4 sm:grid-cols-2 lg:grid-cols-4 sm:px-6">
-        <TrustStripItem icon={<TruckIcon />} title="Fast UAE dispatch" text="Local delivery support for stocked marine accessories." />
+        <TrustStripItem icon={<TruckIcon />} title="Fast UAE dispatch" text="Local delivery support for marine accessories." />
         <TrustStripItem icon={<ShieldIcon />} title="Marine grade" text="Safety, power, anchoring, deck and cleaning supplies." />
         <TrustStripItem icon={<BriefcaseIcon />} title="Trade friendly" text="Built for workshops, crews, retailers and procurement teams." />
         <TrustStripItem icon={<LockIcon />} title="Secure cart" text="Simple demo cart flow with quick quote paths." />
@@ -1109,23 +1089,13 @@ function ProductCard({
               </p>
             ) : null}
           </div>
-          <span
-            className={
-              product.stockQuantity > 0
-                ? "rounded-full bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700"
-                : "rounded-full bg-rose-50 px-2 py-1 text-xs font-black text-rose-700"
-            }
-          >
-            {product.stockQuantity > 0 ? "In stock" : "Sold out"}
-          </span>
         </div>
         <button
-          className="mt-4 min-h-11 w-full rounded-full bg-[#0a2540] px-3 text-sm font-black text-white transition hover:bg-[#0e7490] disabled:cursor-not-allowed disabled:bg-slate-300"
-          disabled={product.stockQuantity === 0}
+          className="mt-4 min-h-11 w-full rounded-full bg-[#0a2540] px-3 text-sm font-black text-white transition hover:bg-[#0e7490]"
           onClick={() => addToCart(product)}
           type="button"
         >
-          {product.stockQuantity > 0 ? "Add to cart" : "Unavailable"}
+          Add to cart
         </button>
       </div>
     </article>
@@ -1285,7 +1255,7 @@ function WhyChooseUs(): ReactElement {
   const items = [
     {
       icon: <TruckIcon />,
-      text: "Local-first shopping experience for stocked accessories and practical marine parts.",
+      text: "Local-first shopping experience for practical marine accessories and parts.",
       title: "UAE delivery support",
     },
     {
@@ -1300,7 +1270,7 @@ function WhyChooseUs(): ReactElement {
     },
     {
       icon: <LockIcon />,
-      text: "Clear product cards, visible stock badges and focused add-to-cart interactions.",
+      text: "Clear product cards and focused add-to-cart interactions.",
       title: "Confident checkout path",
     },
   ];
@@ -1325,33 +1295,6 @@ function WhyChooseUs(): ReactElement {
             <p className="mt-2 text-sm leading-6 text-slate-600">{item.text}</p>
           </article>
         ))}
-      </div>
-    </section>
-  );
-}
-
-function Testimonials(): ReactElement {
-  return (
-    <section className="bg-[#071827] py-12 text-white">
-      <div className="mx-auto max-w-[1480px] px-4 sm:px-6">
-        <SectionHeader
-          eyebrow="Customer confidence"
-          subtitle="Social proof gives the homepage more depth and helps the store feel real."
-          tone="dark"
-          title="Trusted by marine buyers"
-        />
-        <div className="mt-7 grid gap-5 lg:grid-cols-3">
-          {testimonials.map((testimonial) => (
-            <article
-              className="rounded-[1.5rem] border border-white/10 bg-white/10 p-6 backdrop-blur"
-              key={testimonial.role}
-            >
-              <QuoteIcon />
-              <p className="mt-5 text-base leading-7 text-slate-100">{testimonial.quote}</p>
-              <p className="mt-5 text-sm font-black text-cyan-100">{testimonial.role}</p>
-            </article>
-          ))}
-        </div>
       </div>
     </section>
   );
@@ -1412,48 +1355,6 @@ function ProjectGallery(): ReactElement {
             </div>
           </article>
         ))}
-      </div>
-    </section>
-  );
-}
-
-function Newsletter(): ReactElement {
-  return (
-    <section className="mx-auto max-w-[1480px] px-4 pb-12 sm:px-6">
-      <div className="rounded-[2rem] bg-gradient-to-br from-[#0a2540] via-[#0e7490] to-[#071827] p-7 text-white shadow-xl shadow-slate-950/12 sm:p-10">
-        <div className="grid gap-6 lg:grid-cols-[1fr_460px] lg:items-center">
-          <div>
-            <p className="text-xs font-black tracking-[0.24em] text-cyan-100 uppercase">
-              Marine supply updates
-            </p>
-            <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-              Get new arrivals, brand drops and trade offers.
-            </h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-cyan-50">
-              Newsletter UI is ready for a future email integration. For now it adds the premium
-              e-commerce finish customers expect.
-            </p>
-          </div>
-          <form className="rounded-[1.5rem] bg-white p-3 shadow-lg">
-            <label className="sr-only" htmlFor="newsletter-email">
-              Email address
-            </label>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <input
-                className="min-h-12 flex-1 rounded-full bg-slate-50 px-4 text-sm text-[#0a2540] outline-none ring-1 ring-slate-200 transition focus:ring-[#f97316]"
-                id="newsletter-email"
-                placeholder="Enter email address"
-                type="email"
-              />
-              <button
-                className="min-h-12 rounded-full bg-[#f97316] px-6 text-sm font-black text-white transition hover:bg-[#c2410c]"
-                type="button"
-              >
-                Subscribe
-              </button>
-            </div>
-          </form>
-        </div>
       </div>
     </section>
   );
@@ -1626,9 +1527,6 @@ export function ProductDetail({
               ) : null}
             </div>
             <p className="mt-4 text-sm leading-6 text-slate-600">{product.description}</p>
-            <div className="mt-5 rounded-2xl bg-emerald-50 p-3 text-sm font-bold text-emerald-800">
-              In stock | {product.stockQuantity} units available
-            </div>
             <button
               className="mt-5 min-h-12 w-full rounded-full bg-[#f97316] text-sm font-black text-white transition hover:bg-[#c2410c]"
               onClick={() => {
@@ -1980,14 +1878,6 @@ function LockIcon(): ReactElement {
     <svg aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
       <rect x="5" y="10" width="14" height="10" rx="2" />
       <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-    </svg>
-  );
-}
-
-function QuoteIcon(): ReactElement {
-  return (
-    <svg aria-hidden="true" className="size-8 text-cyan-100" fill="currentColor" viewBox="0 0 24 24">
-      <path d="M7 6h5v5c0 4-2 6-6 7l-1-2c2-.7 3-1.7 3-3H5V6h2Zm10 0h5v5c0 4-2 6-6 7l-1-2c2-.7 3-1.7 3-3h-3V6h2Z" />
     </svg>
   );
 }

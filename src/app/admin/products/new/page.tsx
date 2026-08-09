@@ -13,7 +13,7 @@ export default async function AdminNewProductPage(): Promise<ReactElement> {
   const sessionUser = await restoreSessionUser(repository, await readSessionUser());
 
   if (!sessionUser || sessionUser.role !== "admin") {
-    redirect("/admin");
+    redirect("/admin/login");
   }
 
   const [categories, brands] = await Promise.all([listCatalogAssignableCategories(repository), listCatalogBrands(repository)]);

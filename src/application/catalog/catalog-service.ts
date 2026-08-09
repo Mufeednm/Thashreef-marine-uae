@@ -62,6 +62,29 @@ export async function createProductForAdmin(
   return { ok: true, product };
 }
 
+export async function updateProductForAdmin(
+  repository: DemoStoreRepository,
+  actor: SessionUser | null,
+  id: string,
+  input: CreateProductInput,
+): Promise<CreateProductResult> {
+  if (!actor || actor.role !== "admin") return { ok: false, reason: "unauthorized" };
+  const products = await repository.listProducts();
+  if (!products.some((product) => product.id === id)) return { ok: false, reason: "unauthorized" };
+  if (products.some((product) => product.id !== id && product.sku.toLowerCase() === input.sku.toLowerCase())) return { ok: false, reason: "duplicate-sku" };
+  const categories = await repository.listCategories();
+  if (!categories.find((category) => category.id === input.categoryId)?.parentCategoryId) return { ok: false, reason: "invalid-category" };
+  if (!(await repository.listBrands()).some((brand) => brand.name === input.brand)) return { ok: false, reason: "invalid-brand" };
+  const product = await repository.updateProduct(id, input);
+  return product ? { ok: true, product } : { ok: false, reason: "invalid-category" };
+}
+
+export async function deleteProductForAdmin(repository: DemoStoreRepository, actor: SessionUser | null, id: string): Promise<AdminMutationResult> {
+  if (!actor || actor.role !== "admin") return { ok: false, reason: "unauthorized" };
+  await repository.deleteProduct(id);
+  return { ok: true };
+}
+
 export async function createBrandForAdmin(
   repository: DemoStoreRepository, actor: SessionUser | null, input: Omit<Brand, "id" | "slug">,
 ): Promise<AdminMutationResult> {

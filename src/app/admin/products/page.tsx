@@ -17,7 +17,7 @@ export default async function AdminProductsRoute(): Promise<ReactElement> {
   const sessionUser = await restoreSessionUser(repository, await readSessionUser());
 
   if (!sessionUser || (sessionUser.role !== "admin" && sessionUser.role !== "staff")) {
-    redirect("/");
+    redirect("/admin/login");
   }
 
   const [products, categories, variants] = await Promise.all([
@@ -36,7 +36,7 @@ export default async function AdminProductsRoute(): Promise<ReactElement> {
           Add product
         </Link>
       }
-      description="Browse the imported marine catalog, inspect pricing and stock, and navigate product work from a dedicated list page."
+      description="Browse the imported marine catalog, inspect pricing, and navigate product work from a dedicated list page."
       eyebrow="Catalog"
       title="Products"
     >

@@ -23,13 +23,7 @@ export function AdminOverviewPage({
   recentOrders,
   variants,
 }: AdminOverviewPageProps): ReactElement {
-  const totalStock = products.reduce((total, product) => total + product.stockQuantity, 0);
-  const inventoryValue = products.reduce(
-    (total, product) => total + product.priceAedCents * product.stockQuantity,
-    0,
-  );
   const featuredProducts = products.filter((product) => product.isFeatured).length;
-  const lowStock = products.filter((product) => product.stockQuantity <= 10);
   const featuredCategories = categories.filter((category) => category.isFeatured).slice(0, 6);
 
   return (
@@ -41,15 +35,9 @@ export function AdminOverviewPage({
           value={products.length.toString()}
         />
         <Metric
-          alert={lowStock.length > 0}
-          detail={`${lowStock.length} low-stock items`}
-          label="Units in stock"
-          value={totalStock.toLocaleString("en-AE")}
-        />
-        <Metric
           detail={`${variants.length} active variants`}
-          label="Inventory value"
-          value={formatAedFromCents(inventoryValue)}
+          label="Product variants"
+          value={variants.length.toLocaleString("en-AE")}
         />
         <Metric
           detail={`${metrics.activeCoupons} active coupons`}
@@ -58,7 +46,7 @@ export function AdminOverviewPage({
         />
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[1.3fr_0.7fr]">
+      <section>
         <article className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
@@ -90,26 +78,6 @@ export function AdminOverviewPage({
           </div>
         </article>
 
-        <article className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-bold text-[#102846]">Low-stock attention</h2>
-          <p className="mt-1 text-sm text-slate-500">Reorder before the next sales cycle.</p>
-          <div className="mt-4 space-y-3">
-            {lowStock.slice(0, 5).map((product) => (
-              <div
-                className="flex items-center justify-between gap-3 rounded-2xl bg-amber-50 px-3 py-3"
-                key={product.id}
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-slate-800">{product.name}</p>
-                  <p className="mt-1 text-xs text-slate-500">{product.sku}</p>
-                </div>
-                <span className="rounded-xl bg-white px-2 py-1 text-xs font-bold text-amber-700">
-                  {product.stockQuantity} left
-                </span>
-              </div>
-            ))}
-          </div>
-        </article>
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">

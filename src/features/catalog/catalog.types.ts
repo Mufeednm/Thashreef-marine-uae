@@ -4,11 +4,11 @@ export interface CreateProductActionState {
     categoryId?: string[];
     description?: string[];
     imageUrl?: string[];
+    imageFile?: string[];
     name?: string[];
     regularPriceAed?: string[];
     salePriceAed?: string[];
     sku?: string[];
-    stockQuantity?: string[];
   };
   message?: string;
   status: "error" | "idle" | "success";

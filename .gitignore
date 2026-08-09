@@ -25,6 +25,7 @@
 *.pem
 .npm-cache/
 data/*.sqlite
+public/product-uploads/
 
 # debug
 npm-debug.log*

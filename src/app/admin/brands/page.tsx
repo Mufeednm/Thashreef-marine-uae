@@ -10,6 +10,6 @@ import { createDemoStoreRepository } from "@/infrastructure/demo-store/file-demo
 export default async function AdminBrandsPage(): Promise<ReactElement> {
   const repository = createDemoStoreRepository();
   const sessionUser = await restoreSessionUser(repository, await readSessionUser());
-  if (!sessionUser || sessionUser.role !== "admin") redirect("/admin");
+  if (!sessionUser || sessionUser.role !== "admin") redirect("/admin/login");
   return <AdminShell description="Create, edit, and protect the supplier brands used in your product catalog." eyebrow="Catalog" title="Brands"><BrandManager brands={await listCatalogBrands(repository)} /></AdminShell>;
 }

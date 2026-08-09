@@ -3,18 +3,18 @@ import { z } from "zod";
 export const createProductSchema = z.object({
   brand: z.string().trim().min(2, { error: "Brand must be at least 2 characters long." }),
   homepageOrder: z.coerce.number().int().min(0).default(0),
-  isBannerProduct: z.string().optional().transform((value) => value === "on"),
-  isBestDeal: z.string().optional().transform((value) => value === "on"),
-  isFeatured: z.string().optional().transform((value) => value === "on"),
-  isNewArrival: z.string().optional().transform((value) => value === "on"),
-  isTopSelling: z.string().optional().transform((value) => value === "on"),
+  isBannerProduct: z.string().nullish().transform((value) => value === "on"),
+  isBestDeal: z.string().nullish().transform((value) => value === "on"),
+  isFeatured: z.string().nullish().transform((value) => value === "on"),
+  isNewArrival: z.string().nullish().transform((value) => value === "on"),
+  isTopSelling: z.string().nullish().transform((value) => value === "on"),
   categoryId: z.coerce.number().int().positive({ error: "Select a category." }),
   description: z
     .string()
     .trim()
     .min(16, { error: "Description must be at least 16 characters long." })
     .max(280, { error: "Description must be 280 characters or less." }),
-  imageUrl: z.string().trim().optional(),
+  imageUrl: z.string().trim().nullish().transform((value) => value ?? ""),
   name: z.string().trim().min(3, { error: "Product name must be at least 3 characters long." }),
   regularPriceAed: z
     .string()
@@ -43,14 +43,6 @@ export const createProductSchema = z.object({
     .regex(/^[A-Za-z0-9-]+$/, {
       error: "SKU can only use letters, numbers, and hyphens.",
     }),
-  stockQuantity: z
-    .string()
-    .trim()
-    .min(1, { error: "Stock is required." })
-    .refine((value) => !Number.isNaN(Number(value)), { error: "Stock must be numeric." })
-    .transform((value) => Number(value))
-    .refine((value) => Number.isInteger(value), { error: "Stock must be a whole number." })
-    .refine((value) => value >= 0, { error: "Stock cannot be negative." }),
 });
 
 export const createCategorySchema = z.object({

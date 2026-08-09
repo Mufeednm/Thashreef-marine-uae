@@ -1,5 +1,29 @@
 # Decision Log
 
+## 2026-08-09 — Store admin product uploads locally
+
+The admin product form now accepts JPG, PNG, and WebP files up to 5 MB. Valid files are written beneath `public/product-uploads` and the resulting public path is stored with the product. This supports local development; the temporary Render filesystem still requires object storage for durable production uploads.
+
+## 2026-08-09 — Support unchecked product-placement controls
+
+Unchecked HTML checkboxes submit `null` in this server-action form path. The product schema now accepts nullish values for all placement flags and converts them to `false`.
+
+## 2026-08-09 — Explain product form validation failures
+
+Product creation and editing now return the actual field-validation messages instead of a generic error summary. Required inputs also use native browser validation, making the correction path visible before submission.
+
+## 2026-08-09 — Complete active catalog CRUD
+
+Products now have protected edit and delete controls alongside the existing brand and category CRUD. Admin access uses a dedicated `/admin/login` entry point, while server-side authorization remains the enforcement layer.
+
+## 2026-08-09 — Use an order-only catalogue
+
+The storefront accepts orders without stock availability checks. Stock quantity is no longer collected or shown in the current admin and customer experiences; the legacy database field remains internal so existing seeded data stays compatible.
+
+## 2026-08-09 — Simplify the storefront homepage
+
+Removed placeholder customer testimonials and the inactive newsletter form to keep the homepage focused on the real product catalogue and avoid collecting email addresses before an email service is configured.
+
 ## 2026-08-09 — Compile SQLite during Render builds
 
 Render's Node 24 build image selected a prebuilt `sqlite3` binary requiring GLIBC 2.38, while the free runtime provides an older compatible library set. The Render configuration therefore builds SQLite from source on the target platform.

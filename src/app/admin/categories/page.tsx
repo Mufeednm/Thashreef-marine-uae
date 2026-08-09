@@ -15,7 +15,7 @@ export default async function AdminCategoriesRoute(): Promise<ReactElement> {
   const sessionUser = await restoreSessionUser(repository, await readSessionUser());
 
   if (!sessionUser || sessionUser.role !== "admin") {
-    redirect("/admin");
+    redirect("/admin/login");
   }
 
   const [categories, fields] = await Promise.all([

@@ -60,6 +60,7 @@ export interface DemoStoreRepository {
   }): Promise<CategoryField>;
   deleteBrand(id: number): Promise<void>;
   deleteCategory(id: number): Promise<void>;
+  deleteProduct(id: string): Promise<void>;
   addProduct(input: PersistedProductInput): Promise<Product>;
   findUserByEmail(emailOrUsername: string): Promise<DemoUser | null>;
   findUserById(id: string): Promise<DemoUser | null>;
@@ -76,4 +77,5 @@ export interface DemoStoreRepository {
     id: number,
     input: Omit<PersistedCategoryInput, "slug" | "fieldLabels">,
   ): Promise<Category | null>;
+  updateProduct(id: string, input: CreateProductInput): Promise<Product | null>;
 }

@@ -6,7 +6,7 @@ import { z } from "zod";
 import type { DemoUser } from "@/domain/auth/user";
 import type { Category } from "@/domain/catalog/category";
 import type { CategoryField } from "@/domain/catalog/category-field";
-import type { Product } from "@/domain/catalog/product";
+import type { CreateProductInput, Product } from "@/domain/catalog/product";
 import type { ProductVariant } from "@/domain/catalog/product-variant";
 import type {
   AdminOverviewMetrics,
@@ -141,6 +141,48 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     );
 
     return product;
+  }
+
+  async deleteProduct(id: string): Promise<void> {
+    await ensureDatabase();
+    await getDatabaseConnection().query("DELETE FROM products WHERE id = :id", {
+      replacements: { id },
+    });
+  }
+
+  async updateProduct(id: string, input: CreateProductInput): Promise<Product | null> {
+    await ensureDatabase();
+    const database = getDatabaseConnection();
+    const [category] = await database.query<{ name: string; parentCategoryId: number | null }>(
+      "SELECT name, parent_category_id AS parentCategoryId FROM categories WHERE id = :id LIMIT 1",
+      { replacements: { id: input.categoryId }, type: QueryTypes.SELECT },
+    );
+    if (!category?.parentCategoryId) return null;
+
+    await database.query(
+      `UPDATE products SET
+        name = :name, sku = :sku, brand = :brand, category = :category, category_id = :categoryId,
+        description = :description, image_url = COALESCE(NULLIF(:imageUrl, ''), image_url),
+        regular_price_aed_cents = :regularPriceAedCents, sale_price_aed_cents = :salePriceAedCents,
+        price_aed_cents = :priceAedCents, is_featured = :isFeatured, is_new_arrival = :isNewArrival,
+        is_top_selling = :isTopSelling, is_best_deal = :isBestDeal, is_banner_product = :isBannerProduct,
+        homepage_order = :homepageOrder
+       WHERE id = :id`,
+      {
+        replacements: {
+          id,
+          name: input.name.trim(), sku: input.sku.trim().toUpperCase(), brand: input.brand.trim(),
+          category: category.name, categoryId: input.categoryId, description: input.description.trim(),
+          imageUrl: input.imageUrl?.trim() ?? "", regularPriceAedCents: input.regularPriceAedCents,
+          salePriceAedCents: input.salePriceAedCents ?? null,
+          priceAedCents: input.salePriceAedCents ?? input.regularPriceAedCents,
+          isFeatured: input.isFeatured ? 1 : 0, isNewArrival: input.isNewArrival ? 1 : 0,
+          isTopSelling: input.isTopSelling ? 1 : 0, isBestDeal: input.isBestDeal ? 1 : 0,
+          isBannerProduct: input.isBannerProduct ? 1 : 0, homepageOrder: input.homepageOrder ?? 0,
+        },
+      },
+    );
+    return (await this.listProducts()).find((product) => product.id === id) ?? null;
   }
 
   async addCategory(input: {

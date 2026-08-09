@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type ReactElement } from "react";
+import { useActionState, useMemo, useState, type ReactElement } from "react";
 import type { Category } from "@/domain/catalog/category";
 import type { Product } from "@/domain/catalog/product";
 import type { ProductVariant } from "@/domain/catalog/product-variant";
 import { formatAedFromCents } from "@/shared/utils/currency";
+import { deleteProductAction } from "@/features/catalog/catalog.actions";
+import { initialCreateProductActionState, type CreateProductActionState } from "@/features/catalog/catalog.types";
 
 interface AdminProductsPageProps {
   categories: Category[];
@@ -87,7 +89,7 @@ export function AdminProductsPage({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1040px] text-left text-sm">
+          <table className="w-full min-w-[900px] text-left text-sm">
             <thead className="bg-slate-50 text-xs tracking-wide text-slate-500 uppercase">
               <tr>
                 <th className="px-5 py-3 font-bold">Product</th>
@@ -95,8 +97,8 @@ export function AdminProductsPage({
                 <th className="px-5 py-3 font-bold">Category</th>
                 <th className="px-5 py-3 font-bold">Price</th>
                 <th className="px-5 py-3 font-bold">Variants</th>
-                <th className="px-5 py-3 font-bold">Stock</th>
                 <th className="px-5 py-3 font-bold">Status</th>
+                <th className="px-5 py-3 font-bold"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -118,19 +120,9 @@ export function AdminProductsPage({
                       </p>
                     ) : null}
                   </td>
+                  <td className="px-5 py-4"><ProductActions product={product} /></td>
                   <td className="px-5 py-4 text-slate-600">
                     {variantCountByProduct.get(product.id) ?? (product.hasVariants ? 1 : 0)}
-                  </td>
-                  <td className="px-5 py-4">
-                    <span
-                      className={
-                        product.stockQuantity <= 10
-                          ? "font-bold text-amber-700"
-                          : "font-semibold text-slate-700"
-                      }
-                    >
-                      {product.stockQuantity} units
-                    </span>
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex gap-2">
@@ -155,6 +147,11 @@ export function AdminProductsPage({
       </section>
     </div>
   );
+}
+
+function ProductActions({ product }: { product: Product }): ReactElement {
+  const [state, action, pending] = useActionState<CreateProductActionState, FormData>(deleteProductAction, initialCreateProductActionState);
+  return <div className="flex min-w-36 flex-col items-start gap-2"><Link className="min-h-10 content-center rounded-xl bg-[#102846] px-3 text-xs font-bold text-white transition hover:bg-[#0e568f]" href={`/admin/products/${product.id}`}>Edit</Link><form action={action} onSubmit={(event) => { if (!window.confirm(`Delete ${product.name}? This cannot be undone.`)) event.preventDefault(); }}><input name="id" type="hidden" value={product.id} /><button className="min-h-10 text-xs font-bold text-rose-700 underline underline-offset-4 disabled:text-slate-400" disabled={pending} type="submit">{pending ? "Deleting..." : "Delete"}</button></form>{state.message ? <span aria-live="polite" className="text-xs text-rose-700">{state.status === "error" ? state.message : "Deleted"}</span> : null}</div>;
 }
 
 function SummaryCard({ label, value }: { label: string; value: string }): ReactElement {

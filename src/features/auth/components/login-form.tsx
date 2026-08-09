@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import { loginAction } from "@/features/auth/auth.actions";
 import { initialLoginActionState, type LoginActionState } from "@/features/auth/auth.types";
 
-export function LoginForm({ redirectTo }: { redirectTo?: string } = {}): ReactElement {
+export function LoginForm({ redirectTo, variant = "storefront" }: { redirectTo?: string; variant?: "admin" | "storefront" } = {}): ReactElement {
   const [state, action, pending] = useActionState<LoginActionState, FormData>(
     loginAction,
     initialLoginActionState,
@@ -19,9 +19,9 @@ export function LoginForm({ redirectTo }: { redirectTo?: string } = {}): ReactEl
       {redirectTo ? <input name="redirectTo" type="hidden" value={redirectTo} /> : null}
       <div className="space-y-1">
         <p className="text-xs font-semibold tracking-[0.3em] text-teal-700 uppercase">
-          Secure Demo Login
+          {variant === "admin" ? "Admin sign in" : "Secure Demo Login"}
         </p>
-        <h2 className="text-2xl font-semibold text-slate-950">Sign in to unlock the catalog</h2>
+        <h2 className="text-2xl font-semibold text-slate-950">{variant === "admin" ? "Sign in to your workspace" : "Sign in to unlock the catalog"}</h2>
         <p className="text-sm leading-6 text-slate-600">
           Use your username or email and password to access the right workspace.
         </p>
@@ -31,7 +31,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string } = {}): ReactEl
         <span className="text-sm font-medium text-slate-700">Username or email</span>
         <input
           className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-teal-500 focus:bg-white"
-          defaultValue="admin"
+          autoComplete="username"
           name="email"
           placeholder="admin"
           type="text"
@@ -45,7 +45,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string } = {}): ReactEl
         <span className="text-sm font-medium text-slate-700">Password</span>
         <input
           className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-teal-500 focus:bg-white"
-          defaultValue="admin123"
+          autoComplete="current-password"
           name="password"
           placeholder="Enter your password"
           type="password"
