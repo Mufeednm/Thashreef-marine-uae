@@ -21,7 +21,7 @@ export function AdminShell({
     <div className="min-h-screen bg-[#f6f8fb] text-slate-900">
       <div className="border-b border-slate-200 bg-[#102846] text-white">
         <div className="mx-auto flex max-w-[1440px] items-center justify-between px-5 py-3 lg:px-8">
-          <p className="text-sm font-medium">Thashreef-marine-uae merchant workspace</p>
+          <p className="text-sm font-medium">Marsa Edge Marine LLC merchant workspace</p>
           <div className="hidden items-center gap-5 text-xs text-slate-300 sm:flex">
             <span>UAE / AED</span>
             <span>Catalog + orders</span>
@@ -34,11 +34,11 @@ export function AdminShell({
         <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-5 px-5 py-5 lg:px-8">
           <div className="flex items-center gap-3">
             <div className="grid size-11 place-items-center rounded-2xl bg-[#f05a28] text-lg font-black tracking-tight text-white">
-              TM
+              ME
             </div>
             <div>
               <p className="text-lg font-extrabold tracking-tight text-[#102846]">
-                THASHREEF-MARINE-UAE
+                MARSA EDGE MARINE LLC
               </p>
               <p className="text-[10px] font-bold tracking-[0.22em] text-slate-500 uppercase">
                 Admin workspace

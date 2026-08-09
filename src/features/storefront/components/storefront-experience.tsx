@@ -207,7 +207,7 @@ export function StorefrontExperience({
             accent: "UAE marine supply, delivered with confidence",
             cta: banner.buttonText,
             description: banner.subtitle,
-            eyebrow: "Thashreef Marine UAE",
+            eyebrow: "Marsa Edge Marine LLC",
             imageAlt: banner.title,
             imageUrl: banner.imageUrl,
             matcher: "all",
@@ -462,7 +462,7 @@ export function StorefrontExperience({
           addToCart={addToCart}
           eyebrow="Fresh arrivals"
           products={newArrivals}
-          subtitle="Recently synced products from the Thashreef Marine UAE catalogue."
+          subtitle="Recently added products from the Marsa Edge Marine LLC catalogue."
           title="New Arrivals"
         />
 
@@ -567,7 +567,7 @@ export function StorefrontExperience({
       <Footer />
 
       <a
-        aria-label="Contact Thashreef Marine UAE on WhatsApp"
+        aria-label="Contact Marsa Edge Marine LLC on WhatsApp"
         className="fixed bottom-5 left-5 z-20 grid size-12 place-items-center rounded-full bg-[#16a34a] text-xs font-black text-white shadow-xl shadow-emerald-950/20 transition hover:-translate-y-0.5 hover:bg-[#15803d]"
         href="https://wa.me/971500000000"
         rel="noreferrer"
@@ -603,7 +603,7 @@ export function StorefrontExperience({
 function TopBar(): ReactElement {
   return (
     <div className="bg-[#071827] px-4 py-2 text-center text-xs font-semibold text-white">
-      Thashreef Marine UAE | Marine accessories, spare parts, UAE dispatch and GCC shipment support
+      Marsa Edge Marine LLC | Marine spare parts, solutions, UAE dispatch and GCC shipment support
     </div>
   );
 }
@@ -669,15 +669,8 @@ function Header({
         >
           <MenuIcon />
         </button>
-        <Link className="flex shrink-0 items-center gap-3" href="/">
-          <span className="grid size-12 place-items-center rounded-2xl bg-gradient-to-br from-[#f97316] to-[#c2410c] font-black text-white shadow-lg shadow-orange-900/10">
-            TM
-          </span>
-          <span className="hidden text-sm font-black leading-4 tracking-tight text-[#0a2540] sm:block">
-            THASHREEF
-            <br />
-            MARINE UAE
-          </span>
+        <Link aria-label="Marsa Edge Marine LLC home" className="relative flex h-12 w-28 shrink-0 items-center overflow-hidden rounded-xl bg-white" href="/">
+          <Image alt="Marsa Edge Marine LLC" className="absolute -top-8 left-1/2 h-auto w-[184px] max-w-none -translate-x-1/2" height={1728} priority src="/brand/marsa-edge-logo-source.png" unoptimized width={1728} />
         </Link>
         <label className="relative flex min-h-12 min-w-0 flex-1 items-center rounded-full border border-slate-200 bg-slate-50 px-4 transition focus-within:border-[#0e7490] focus-within:bg-white focus-within:shadow-sm">
           <SearchIcon />
@@ -1753,7 +1746,7 @@ function Footer(): ReactElement {
     <footer className="bg-[#071827] px-4 py-12 text-slate-300 sm:px-6">
       <div className="mx-auto grid max-w-[1480px] gap-8 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
-          <p className="text-lg font-black text-white">THASHREEF MARINE UAE</p>
+          <p className="text-lg font-black text-white">MARSA EDGE MARINE LLC</p>
           <p className="mt-3 max-w-sm text-sm leading-6">
             Premium marine accessories, spare parts and equipment for UAE customers, workshops,
             retail buyers and vessel service teams.
@@ -1775,7 +1768,7 @@ function Footer(): ReactElement {
           <p className="text-sm font-extrabold text-white">Service desk</p>
           <p className="mt-3 text-sm">Mon-Sat | 8am-6pm</p>
           <p className="mt-1 text-sm">+971 50 000 0000</p>
-          <p className="mt-1 text-sm">sales@thashreef-marine-uae.local</p>
+          <p className="mt-1 text-sm">sales@marsaedgemarine.com</p>
         </div>
       </div>
     </footer>

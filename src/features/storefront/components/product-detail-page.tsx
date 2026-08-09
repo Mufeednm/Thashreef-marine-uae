@@ -32,7 +32,7 @@ export function ProductDetailPage({ product, relatedProducts }: { product: Produ
     <main className="min-h-screen bg-[#eef5fa] text-[#0a2540]">
       <div className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex min-h-16 max-w-[1280px] items-center px-4 sm:px-6">
-          <Link className="text-sm font-black text-[#0a2540] transition hover:text-[#0e7490]" href="/">THASHREEF MARINE UAE</Link>
+          <Link className="text-sm font-black text-[#0a2540] transition hover:text-[#0e7490]" href="/">MARSA EDGE MARINE LLC</Link>
           <Link className="ml-auto min-h-11 content-center text-sm font-bold text-slate-600 underline-offset-4 hover:text-[#0e7490] hover:underline" href="/shop">Continue shopping</Link>
         </div>
       </div>

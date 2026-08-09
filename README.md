@@ -1,10 +1,10 @@
-# Thashreef-marine-uae E-Commerce
+# Marsa Edge Marine LLC E-Commerce
 
 Production-oriented e-commerce platform foundation built with Next.js App Router, TypeScript, Tailwind CSS, Sequelize, MySQL, and Zod.
 
 ## Local demo
 
-The current local testing console is branded as `Thashreef-marine-uae`. It includes:
+The current local testing console is branded as `Marsa Edge Marine LLC`. It includes:
 
 - cookie-based local login backed by a SQLite database in `data/akbar-marine.sqlite`
 - versioned SQLite catalog seeding for marine-only brands, main categories, subcategories, optional child categories, and products

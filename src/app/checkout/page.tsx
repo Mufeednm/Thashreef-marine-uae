@@ -5,7 +5,7 @@ import { CheckoutLogin } from "@/features/checkout/components/checkout-login";
 import { readSessionUser } from "@/infrastructure/auth/session-cookie";
 import { createDemoStoreRepository } from "@/infrastructure/demo-store/file-demo-store-repository";
 
-export const metadata = { title: "Checkout | Thashreef Marine UAE" };
+export const metadata = { title: "Checkout | Marsa Edge Marine LLC" };
 
 export default async function CheckoutPage(): Promise<ReactElement> {
   const repository = createDemoStoreRepository();

@@ -1,5 +1,9 @@
 # Decision Log
 
+## 2026-08-09 - Use the supplied Marsa Edge brand identity
+
+The customer storefront and protected admin workspace use Marsa Edge Marine LLC as their visible business name. The supplied Marsa Edge logo is retained as a local public asset and positioned within a fixed responsive header frame so it remains readable without introducing mobile overflow.
+
 ## 2026-08-09 - Make dashboard analytics literal, not illustrative
 
 The overview now compares the actual stored totals for today, the last seven days, and the current month. It deliberately does not present these accumulated periods as a daily trend. The supporting text makes clear that figures update from SQLite order and customer records, not from a forecast.

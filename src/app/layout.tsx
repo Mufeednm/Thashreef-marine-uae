@@ -16,8 +16,8 @@ const cairo = Cairo({ variable: "--font-cairo", subsets: ["arabic"] });
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
-  title: { default: "Thashreef-marine-uae", template: "%s | Thashreef-marine-uae" },
-  description: "Local marine parts commerce console for Thashreef-marine-uae.",
+  title: { default: "Marsa Edge Marine LLC", template: "%s | Marsa Edge Marine LLC" },
+  description: "Marine spare parts and solutions from Marsa Edge Marine LLC.",
   robots: { index: true, follow: true },
 };
 
