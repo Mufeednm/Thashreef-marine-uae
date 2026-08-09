@@ -4,4 +4,5 @@
 - Ensured the SQLite parent directory exists at runtime, allowing a fresh temporary demo database to initialize on Render.
 - Configured Render's build environment to install Tailwind's development-only build dependency before running the production build.
 - Moved Tailwind's PostCSS build packages into regular dependencies after Render's production install omitted them during the first deployment.
+- Updated the Render build command to explicitly include all development dependencies required by the Next.js TypeScript build.
 - The deployment is intentionally non-persistent: the test catalog re-seeds when the free service restarts or redeploys.

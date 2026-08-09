@@ -3,7 +3,7 @@ services:
     name: thashreef-marine-uae-demo
     runtime: node
     plan: free
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npm run start -- -H 0.0.0.0 -p $PORT
     autoDeploy: true
     envVars:
