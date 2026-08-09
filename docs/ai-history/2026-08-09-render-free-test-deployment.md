@@ -2,4 +2,5 @@
 
 - Added `render.yaml` to describe a free Node web service: dependency installation, production build, and port-aware Next.js start command.
 - Ensured the SQLite parent directory exists at runtime, allowing a fresh temporary demo database to initialize on Render.
+- Configured Render's build environment to install Tailwind's development-only build dependency before running the production build.
 - The deployment is intentionally non-persistent: the test catalog re-seeds when the free service restarts or redeploys.
