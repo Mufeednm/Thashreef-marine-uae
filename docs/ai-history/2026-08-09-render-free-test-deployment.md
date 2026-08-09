@@ -5,4 +5,5 @@
 - Configured Render's build environment to install Tailwind's development-only build dependency before running the production build.
 - Moved Tailwind's PostCSS build packages into regular dependencies after Render's production install omitted them during the first deployment.
 - Updated the Render build command to explicitly include all development dependencies required by the Next.js TypeScript build.
+- Configured `sqlite3` to compile from source during Render builds because its Node 24 prebuilt binary requires GLIBC 2.38, which is unavailable in the free runtime.
 - The deployment is intentionally non-persistent: the test catalog re-seeds when the free service restarts or redeploys.

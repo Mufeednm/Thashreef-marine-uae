@@ -1,5 +1,9 @@
 # Decision Log
 
+## 2026-08-09 — Compile SQLite during Render builds
+
+Render's Node 24 build image selected a prebuilt `sqlite3` binary requiring GLIBC 2.38, while the free runtime provides an older compatible library set. The Render configuration therefore builds SQLite from source on the target platform.
+
 ## 2026-08-09 - Render Free is the temporary test host
 
 - **Decision:** Configure the current SQLite-backed demo for deployment as a Render Free web service, without persistent storage.

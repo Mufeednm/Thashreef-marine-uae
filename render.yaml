@@ -3,7 +3,9 @@ services:
     name: thashreef-marine-uae-demo
     runtime: node
     plan: free
-    buildCommand: npm ci --include=dev && npm run build
+    # Render's current Node 24 image downloads a SQLite binary that needs a
+    # newer GLIBC than the free runtime provides. Compile it for the runtime.
+    buildCommand: npm_config_build_from_source=true npm ci --include=dev && npm run build
     startCommand: npm run start -- -H 0.0.0.0 -p $PORT
     autoDeploy: true
     envVars:
@@ -11,5 +13,7 @@ services:
         value: production
       - key: NPM_CONFIG_INCLUDE
         value: dev
+      - key: NPM_CONFIG_BUILD_FROM_SOURCE
+        value: "true"
       - key: AUTH_SECRET
         generateValue: true

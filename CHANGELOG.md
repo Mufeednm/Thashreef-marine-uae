@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Configure Render to compile SQLite for its Linux runtime during the test deployment build.
+
 ## [Unreleased]
 
 ### Added
