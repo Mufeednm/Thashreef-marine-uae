@@ -11,3 +11,7 @@ The Hostinger build log showed that `sqlite3` failed to load because the runtime
 ## Verification
 
 `npm run typecheck`, `npm run lint`, and `npm run build` pass locally.
+
+## Deployment follow-up
+
+Hostinger requires `mysql2` to remain external to the Next.js server bundle because Sequelize loads the driver dynamically. The Next.js configuration explicitly externalizes it.
