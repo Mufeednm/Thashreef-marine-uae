@@ -1,4 +1,5 @@
 import "server-only";
+import mysql2 from "mysql2";
 import { Sequelize } from "sequelize";
 import { getServerEnvironment } from "@/config/env";
 
@@ -19,6 +20,7 @@ export function getDatabaseConnection(): Sequelize {
     username: environment.DB_USER,
     password: environment.DB_PASSWORD,
     port: environment.DB_PORT,
+    dialectModule: mysql2,
     dialectOptions: environment.DB_SSL === "true" ? { ssl: { require: true } } : undefined,
   });
 

@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  serverExternalPackages: ["sequelize", "mysql2"],
+  serverExternalPackages: ["sequelize"],
 };
 
 export default nextConfig;
