@@ -4,9 +4,9 @@ MySQL 8 and Sequelize are the initial persistence stack. Models and migrations w
 
 Planned entities: users, roles, permissions, addresses, categories, brands, products, variants, inventory, images, orders, payments, coupons, reviews, wishlists, notifications, shipping, audit logs, and analytics.
 
-## Local demo catalog schema
+## Production catalog schema
 
-The current local SQLite runtime uses a versioned seed marker in `seed_meta` to replace the old demo catalog with a marine-only taxonomy once per seed version.
+The runtime uses MySQL 8 through Sequelize. On first startup it creates the current schema and uses a versioned seed marker in `seed_meta` to replace the old demo catalog with a marine-only taxonomy once per seed version.
 
 - `categories` is self-referencing via `parent_category_id`.
 - Main categories have `parent_category_id = NULL`.

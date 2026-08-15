@@ -27,8 +27,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>): React.ReactElement {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col"><LocaleProvider>{children}</LocaleProvider></body>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} h-full antialiased`}
+    >
+      <body className="min-h-full flex flex-col">
+        <LocaleProvider>{children}</LocaleProvider>
+      </body>
     </html>
   );
 }
+export const dynamic = "force-dynamic";

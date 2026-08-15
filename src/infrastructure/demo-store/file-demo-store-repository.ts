@@ -24,6 +24,7 @@ import type {
   PersistedProductInput,
 } from "@/domain/demo-store/demo-store-repository";
 import { getDatabaseConnection } from "@/infrastructure/database/sequelize";
+import { initializeMySqlSchema } from "@/infrastructure/database/mysql-schema";
 import {
   marineBrands,
   marineCatalogSeedVersion,
@@ -61,7 +62,14 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     await database.query(
       `INSERT INTO brands (name, name_ar, slug, logo_text, display_order)
        VALUES (:name, :nameAr, :slug, :logoText, :displayOrder)`,
-      { replacements: { ...input, name: input.name.trim(), nameAr: input.nameAr?.trim() || null, logoText: input.logoText.trim() } },
+      {
+        replacements: {
+          ...input,
+          name: input.name.trim(),
+          nameAr: input.nameAr?.trim() || null,
+          logoText: input.logoText.trim(),
+        },
+      },
     );
     const [brand] = await database.query<Brand>(
       `SELECT id, name, name_ar AS nameAr, slug, logo_text AS logoText, display_order AS displayOrder
@@ -179,14 +187,24 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
       {
         replacements: {
           id,
-          name: input.name.trim(), nameAr: input.nameAr?.trim() || null, sku: input.sku.trim().toUpperCase(), brand: input.brand.trim(),
-          category: category.name, categoryId: input.categoryId, description: input.description.trim(), descriptionAr: input.descriptionAr?.trim() || null,
-          imageUrl: input.imageUrl?.trim() ?? "", regularPriceAedCents: input.regularPriceAedCents,
+          name: input.name.trim(),
+          nameAr: input.nameAr?.trim() || null,
+          sku: input.sku.trim().toUpperCase(),
+          brand: input.brand.trim(),
+          category: category.name,
+          categoryId: input.categoryId,
+          description: input.description.trim(),
+          descriptionAr: input.descriptionAr?.trim() || null,
+          imageUrl: input.imageUrl?.trim() ?? "",
+          regularPriceAedCents: input.regularPriceAedCents,
           salePriceAedCents: input.salePriceAedCents ?? null,
           priceAedCents: input.salePriceAedCents ?? input.regularPriceAedCents,
-          isFeatured: input.isFeatured ? 1 : 0, isNewArrival: input.isNewArrival ? 1 : 0,
-          isTopSelling: input.isTopSelling ? 1 : 0, isBestDeal: input.isBestDeal ? 1 : 0,
-          isBannerProduct: input.isBannerProduct ? 1 : 0, homepageOrder: input.homepageOrder ?? 0,
+          isFeatured: input.isFeatured ? 1 : 0,
+          isNewArrival: input.isNewArrival ? 1 : 0,
+          isTopSelling: input.isTopSelling ? 1 : 0,
+          isBestDeal: input.isBestDeal ? 1 : 0,
+          isBannerProduct: input.isBannerProduct ? 1 : 0,
+          homepageOrder: input.homepageOrder ?? 0,
         },
       },
     );
@@ -218,7 +236,7 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
           bannerImageUrl: input.bannerImageUrl?.trim() || null,
           displayOrder: input.displayOrder,
           isFeatured: input.isFeatured ? 1 : 0,
-          showOnHomepage: input.showOnHomepage ?? input.isFeatured ? 1 : 0,
+          showOnHomepage: (input.showOnHomepage ?? input.isFeatured) ? 1 : 0,
           homepageOrder: input.homepageOrder ?? input.displayOrder,
           name: input.name.trim(),
           nameAr: input.nameAr?.trim() || null,
@@ -259,13 +277,17 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
 
   async deleteBrand(id: number): Promise<void> {
     await ensureDatabase();
-    await getDatabaseConnection().query("DELETE FROM brands WHERE id = :id", { replacements: { id } });
+    await getDatabaseConnection().query("DELETE FROM brands WHERE id = :id", {
+      replacements: { id },
+    });
   }
 
   async deleteCategory(id: number): Promise<void> {
     await ensureDatabase();
     const database = getDatabaseConnection();
-    await database.query("DELETE FROM category_fields WHERE category_id = :id", { replacements: { id } });
+    await database.query("DELETE FROM category_fields WHERE category_id = :id", {
+      replacements: { id },
+    });
     await database.query("DELETE FROM categories WHERE id = :id", { replacements: { id } });
   }
 
@@ -279,14 +301,28 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     if (!existing) return null;
     await database.query(
       `UPDATE brands SET name = :name, name_ar = :nameAr, logo_text = :logoText, display_order = :displayOrder WHERE id = :id`,
-      { replacements: { id, name: input.name.trim(), nameAr: input.nameAr?.trim() || null, logoText: input.logoText.trim(), displayOrder: input.displayOrder } },
+      {
+        replacements: {
+          id,
+          name: input.name.trim(),
+          nameAr: input.nameAr?.trim() || null,
+          logoText: input.logoText.trim(),
+          displayOrder: input.displayOrder,
+        },
+      },
     );
     if (existing.name !== input.name.trim()) {
       await database.query("UPDATE products SET brand = :name WHERE brand = :previousName", {
         replacements: { name: input.name.trim(), previousName: existing.name },
       });
     }
-    return { ...existing, name: input.name.trim(), nameAr: input.nameAr?.trim() || null, logoText: input.logoText.trim(), displayOrder: input.displayOrder };
+    return {
+      ...existing,
+      name: input.name.trim(),
+      nameAr: input.nameAr?.trim() || null,
+      logoText: input.logoText.trim(),
+      displayOrder: input.displayOrder,
+    };
   }
 
   async updateCategory(
@@ -295,21 +331,32 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
   ): Promise<Category | null> {
     await ensureDatabase();
     const database = getDatabaseConnection();
-    const [existing] = await database.query<Category>("SELECT id FROM categories WHERE id = :id LIMIT 1", {
-      replacements: { id }, type: QueryTypes.SELECT,
-    });
+    const [existing] = await database.query<Category>(
+      "SELECT id FROM categories WHERE id = :id LIMIT 1",
+      {
+        replacements: { id },
+        type: QueryTypes.SELECT,
+      },
+    );
     if (!existing) return null;
     await database.query(
       `UPDATE categories SET name = :name, name_ar = :nameAr, parent_category_id = :parentCategoryId,
        banner_image_url = :bannerImageUrl, is_featured = :isFeatured,
        show_on_homepage = :showOnHomepage, homepage_order = :homepageOrder,
        display_order = :displayOrder WHERE id = :id`,
-      { replacements: {
-        id, name: input.name.trim(), nameAr: input.nameAr?.trim() || null, parentCategoryId: input.parentCategoryId ?? null,
-        bannerImageUrl: input.bannerImageUrl?.trim() || null, isFeatured: input.isFeatured ? 1 : 0,
-        showOnHomepage: input.showOnHomepage ? 1 : 0, homepageOrder: input.homepageOrder ?? 0,
-        displayOrder: input.displayOrder,
-      } },
+      {
+        replacements: {
+          id,
+          name: input.name.trim(),
+          nameAr: input.nameAr?.trim() || null,
+          parentCategoryId: input.parentCategoryId ?? null,
+          bannerImageUrl: input.bannerImageUrl?.trim() || null,
+          isFeatured: input.isFeatured ? 1 : 0,
+          showOnHomepage: input.showOnHomepage ? 1 : 0,
+          homepageOrder: input.homepageOrder ?? 0,
+          displayOrder: input.displayOrder,
+        },
+      },
     );
     const rows = await this.listCategories();
     return rows.find((category) => category.id === id) ?? null;
@@ -329,9 +376,9 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
        ) VALUES (
          :categoryId, :label, :fieldKey, 'text', 0, :displayOrder
        )
-       ON CONFLICT(category_id, field_key) DO UPDATE SET
-         label = excluded.label,
-         display_order = excluded.display_order`,
+       ON DUPLICATE KEY UPDATE
+         label = VALUES(label),
+         display_order = VALUES(display_order)`,
       { replacements: input },
     );
 
@@ -394,7 +441,14 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     await database.query(
       `INSERT INTO customer_profiles (name, email, phone, role, date_joined, status)
        VALUES (:name, :email, :phone, 'customer', :dateJoined, 'active')`,
-      { replacements: { name, email, phone: input.phone.trim(), dateJoined: new Date().toISOString() } },
+      {
+        replacements: {
+          name,
+          email,
+          phone: input.phone.trim(),
+          dateJoined: new Date().toISOString(),
+        },
+      },
     );
 
     return { id, name, username, email, password: input.password, role: "customer" };
@@ -412,7 +466,14 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
       await database.query(
         `INSERT INTO customer_profiles (name, email, phone, role, date_joined, status)
          VALUES (:name, :email, :phone, 'customer', :dateJoined, 'active')`,
-        { replacements: { dateJoined: new Date().toISOString(), email, name: input.customerName, phone: input.phone } },
+        {
+          replacements: {
+            dateJoined: new Date().toISOString(),
+            email,
+            name: input.customerName,
+            phone: input.phone,
+          },
+        },
       );
       [customer] = await database.query<{ id: number }>(
         "SELECT id FROM customer_profiles WHERE lower(email) = :email ORDER BY id DESC LIMIT 1",
@@ -424,7 +485,17 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     await database.query(
       `INSERT INTO orders (customer_profile_id, order_date, status, shipping_zone, currency, subtotal_aed_cents, shipping_fee_aed_cents, total_aed_cents, payment_method)
        VALUES (:customerProfileId, :orderDate, 'new', :shippingZone, 'AED', :subtotal, :shipping, :total, :paymentMethod)`,
-      { replacements: { customerProfileId: customer.id, orderDate, paymentMethod: input.paymentMethod, shipping: input.shippingFeeAedCents, shippingZone: input.emirate, subtotal: input.subtotalAedCents, total: input.totalAedCents } },
+      {
+        replacements: {
+          customerProfileId: customer.id,
+          orderDate,
+          paymentMethod: input.paymentMethod,
+          shipping: input.shippingFeeAedCents,
+          shippingZone: input.emirate,
+          subtotal: input.subtotalAedCents,
+          total: input.totalAedCents,
+        },
+      },
     );
     const [createdOrder] = await database.query<{ id: number }>(
       "SELECT id FROM orders WHERE customer_profile_id = :customerProfileId ORDER BY id DESC LIMIT 1",
@@ -435,10 +506,24 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
       await database.query(
         `INSERT INTO order_items (order_id, variant_or_product_id, product_name, quantity, unit_price_aed_cents, line_total_aed_cents)
          VALUES (:orderId, 0, :name, :quantity, :price, :lineTotal)`,
-        { replacements: { lineTotal: line.unitPriceAedCents * line.quantity, name: line.name, orderId: createdOrder.id, price: line.unitPriceAedCents, quantity: line.quantity } },
+        {
+          replacements: {
+            lineTotal: line.unitPriceAedCents * line.quantity,
+            name: line.name,
+            orderId: createdOrder.id,
+            price: line.unitPriceAedCents,
+            quantity: line.quantity,
+          },
+        },
       );
     }
-    return { id: createdOrder.id, customerName: input.customerName, orderDate, status: "new", totalAedCents: input.totalAedCents };
+    return {
+      id: createdOrder.id,
+      customerName: input.customerName,
+      orderDate,
+      status: "new",
+      totalAedCents: input.totalAedCents,
+    };
   }
 
   async findUserById(id: string): Promise<DemoUser | null> {
@@ -464,9 +549,10 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
   async getAdminOverviewMetrics(): Promise<AdminOverviewMetrics> {
     await ensureDatabase();
 
-    const [orders] = await getDatabaseConnection().query<
-      { orderCount: number; totalRevenueAedCents: number }
-    >(
+    const [orders] = await getDatabaseConnection().query<{
+      orderCount: number;
+      totalRevenueAedCents: number;
+    }>(
       `SELECT COUNT(*) AS orderCount, COALESCE(SUM(total_aed_cents), 0) AS totalRevenueAedCents
        FROM orders`,
       { type: QueryTypes.SELECT },
@@ -507,19 +593,22 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
 
   async listHomepageBanners(): Promise<HomepageBanner[]> {
     await ensureDatabase();
-    return getDatabaseConnection().query<HomepageBanner>(
-      `SELECT id, image_url AS imageUrl, title, subtitle, button_text AS buttonText,
+    return getDatabaseConnection()
+      .query<HomepageBanner>(
+        `SELECT id, image_url AS imageUrl, title, subtitle, button_text AS buttonText,
        button_link AS buttonLink, is_active AS isActive, sort_order AS sortOrder
        FROM homepage_banners WHERE is_active = 1 ORDER BY sort_order, id`,
-      { type: QueryTypes.SELECT },
-    ).then((rows) => rows.map((row) => ({ ...row, isActive: Boolean(row.isActive) })));
+        { type: QueryTypes.SELECT },
+      )
+      .then((rows) => rows.map((row) => ({ ...row, isActive: Boolean(row.isActive) })));
   }
 
   async listCategories(): Promise<Category[]> {
     await ensureDatabase();
 
-    return getDatabaseConnection().query<Category>(
-      `SELECT
+    return getDatabaseConnection()
+      .query<Category>(
+        `SELECT
          id,
          name,
          name_ar AS nameAr,
@@ -532,14 +621,15 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
          display_order AS displayOrder
        FROM categories
        ORDER BY parent_category_id IS NOT NULL, display_order, name`,
-      { type: QueryTypes.SELECT },
-    ).then((rows) =>
-      rows.map((row) => ({
-        ...row,
-        isFeatured: Boolean(row.isFeatured),
-        showOnHomepage: Boolean(row.showOnHomepage),
-      })),
-    );
+        { type: QueryTypes.SELECT },
+      )
+      .then((rows) =>
+        rows.map((row) => ({
+          ...row,
+          isFeatured: Boolean(row.isFeatured),
+          showOnHomepage: Boolean(row.showOnHomepage),
+        })),
+      );
   }
 
   async getAdminActivityMetrics(): Promise<AdminActivityMetrics> {
@@ -547,27 +637,46 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     const database = getDatabaseConnection();
     const [customers] = await database.query<{ today: number; week: number; month: number }>(
       `SELECT
-         SUM(CASE WHEN date(date_joined) = date('now', 'localtime') THEN 1 ELSE 0 END) AS today,
-         SUM(CASE WHEN date(date_joined) >= date('now', 'localtime', '-6 days') THEN 1 ELSE 0 END) AS week,
-         SUM(CASE WHEN date(date_joined) >= date('now', 'localtime', 'start of month') THEN 1 ELSE 0 END) AS month
+         SUM(CASE WHEN DATE(date_joined) = CURDATE() THEN 1 ELSE 0 END) AS today,
+         SUM(CASE WHEN DATE(date_joined) >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) THEN 1 ELSE 0 END) AS week,
+         SUM(CASE WHEN DATE(date_joined) >= DATE_FORMAT(CURDATE(), '%Y-%m-01') THEN 1 ELSE 0 END) AS month
        FROM customer_profiles`,
       { type: QueryTypes.SELECT },
     );
-    const [orders] = await database.query<{ today: number; week: number; month: number; todayRevenue: number; weekRevenue: number; monthRevenue: number }>(
+    const [orders] = await database.query<{
+      today: number;
+      week: number;
+      month: number;
+      todayRevenue: number;
+      weekRevenue: number;
+      monthRevenue: number;
+    }>(
       `SELECT
-         SUM(CASE WHEN date(order_date) = date('now', 'localtime') THEN 1 ELSE 0 END) AS today,
-         SUM(CASE WHEN date(order_date) >= date('now', 'localtime', '-6 days') THEN 1 ELSE 0 END) AS week,
-         SUM(CASE WHEN date(order_date) >= date('now', 'localtime', 'start of month') THEN 1 ELSE 0 END) AS month,
-         SUM(CASE WHEN date(order_date) = date('now', 'localtime') THEN total_aed_cents ELSE 0 END) AS todayRevenue,
-         SUM(CASE WHEN date(order_date) >= date('now', 'localtime', '-6 days') THEN total_aed_cents ELSE 0 END) AS weekRevenue,
-         SUM(CASE WHEN date(order_date) >= date('now', 'localtime', 'start of month') THEN total_aed_cents ELSE 0 END) AS monthRevenue
+         SUM(CASE WHEN DATE(order_date) = CURDATE() THEN 1 ELSE 0 END) AS today,
+         SUM(CASE WHEN DATE(order_date) >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) THEN 1 ELSE 0 END) AS week,
+         SUM(CASE WHEN DATE(order_date) >= DATE_FORMAT(CURDATE(), '%Y-%m-01') THEN 1 ELSE 0 END) AS month,
+         SUM(CASE WHEN DATE(order_date) = CURDATE() THEN total_aed_cents ELSE 0 END) AS todayRevenue,
+         SUM(CASE WHEN DATE(order_date) >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) THEN total_aed_cents ELSE 0 END) AS weekRevenue,
+         SUM(CASE WHEN DATE(order_date) >= DATE_FORMAT(CURDATE(), '%Y-%m-01') THEN total_aed_cents ELSE 0 END) AS monthRevenue
        FROM orders`,
       { type: QueryTypes.SELECT },
     );
     return {
-      customerRegistrations: { month: Number(customers?.month ?? 0), today: Number(customers?.today ?? 0), week: Number(customers?.week ?? 0) },
-      orders: { month: Number(orders?.month ?? 0), today: Number(orders?.today ?? 0), week: Number(orders?.week ?? 0) },
-      revenueAedCents: { month: Number(orders?.monthRevenue ?? 0), today: Number(orders?.todayRevenue ?? 0), week: Number(orders?.weekRevenue ?? 0) },
+      customerRegistrations: {
+        month: Number(customers?.month ?? 0),
+        today: Number(customers?.today ?? 0),
+        week: Number(customers?.week ?? 0),
+      },
+      orders: {
+        month: Number(orders?.month ?? 0),
+        today: Number(orders?.today ?? 0),
+        week: Number(orders?.week ?? 0),
+      },
+      revenueAedCents: {
+        month: Number(orders?.monthRevenue ?? 0),
+        today: Number(orders?.todayRevenue ?? 0),
+        week: Number(orders?.weekRevenue ?? 0),
+      },
     };
   }
 
@@ -583,8 +692,9 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
   async listCategoryFields(): Promise<CategoryField[]> {
     await ensureDatabase();
 
-    return getDatabaseConnection().query<CategoryField>(
-      `SELECT
+    return getDatabaseConnection()
+      .query<CategoryField>(
+        `SELECT
          id,
          category_id AS categoryId,
          label,
@@ -594,20 +704,22 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
          display_order AS displayOrder
        FROM category_fields
        ORDER BY category_id, display_order, label`,
-      { type: QueryTypes.SELECT },
-    ).then((rows) =>
-      rows.map((row) => ({
-        ...row,
-        isRequired: Boolean(row.isRequired),
-      })),
-    );
+        { type: QueryTypes.SELECT },
+      )
+      .then((rows) =>
+        rows.map((row) => ({
+          ...row,
+          isRequired: Boolean(row.isRequired),
+        })),
+      );
   }
 
   async listProducts(): Promise<Product[]> {
     await ensureDatabase();
 
-    return getDatabaseConnection().query<Product>(
-      `SELECT
+    return getDatabaseConnection()
+      .query<Product>(
+        `SELECT
          p.id,
          p.name,
          p.name_ar AS nameAr,
@@ -640,19 +752,20 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
        LEFT JOIN categories c ON c.id = p.category_id
        LEFT JOIN categories pc ON pc.id = c.parent_category_id
        LEFT JOIN categories gc ON gc.id = pc.parent_category_id`,
-      { type: QueryTypes.SELECT },
-    ).then((rows) =>
-      rows.map((row) => ({
-        ...row,
-        hasVariants: Boolean(row.hasVariants),
-        isActive: Boolean(row.isActive),
-        isFeatured: Boolean(row.isFeatured),
-        isNewArrival: Boolean(row.isNewArrival),
-        isTopSelling: Boolean(row.isTopSelling),
-        isBestDeal: Boolean(row.isBestDeal),
-        isBannerProduct: Boolean(row.isBannerProduct),
-      })),
-    );
+        { type: QueryTypes.SELECT },
+      )
+      .then((rows) =>
+        rows.map((row) => ({
+          ...row,
+          hasVariants: Boolean(row.hasVariants),
+          isActive: Boolean(row.isActive),
+          isFeatured: Boolean(row.isFeatured),
+          isNewArrival: Boolean(row.isNewArrival),
+          isTopSelling: Boolean(row.isTopSelling),
+          isBestDeal: Boolean(row.isBestDeal),
+          isBannerProduct: Boolean(row.isBannerProduct),
+        })),
+      );
   }
 
   async listProductVariants(): Promise<ProductVariant[]> {
@@ -705,10 +818,9 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
 
   async updateOrderStatus(id: number, status: "accepted" | "rejected"): Promise<void> {
     await ensureDatabase();
-    await getDatabaseConnection().query(
-      "UPDATE orders SET status = :status WHERE id = :id",
-      { replacements: { id, status } },
-    );
+    await getDatabaseConnection().query("UPDATE orders SET status = :status WHERE id = :id", {
+      replacements: { id, status },
+    });
   }
 }
 
@@ -719,231 +831,10 @@ async function ensureDatabase(): Promise<void> {
 
 async function initializeDatabase(): Promise<void> {
   const database = getDatabaseConnection();
-
-  await database.query(`CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    username TEXT NOT NULL UNIQUE,
-    email TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL,
-    role TEXT NOT NULL
-  )`);
-
-  await database.query(`CREATE TABLE IF NOT EXISTS seed_meta (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-  )`);
-
-  await database.query(`CREATE TABLE IF NOT EXISTS brands (
-    id INTEGER PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE,
-    name_ar TEXT NULL,
-    slug TEXT NOT NULL UNIQUE,
-    logo_text TEXT NOT NULL,
-    display_order INTEGER NOT NULL DEFAULT 0
-  )`);
-
-  await database.query(`CREATE TABLE IF NOT EXISTS categories (
-    id INTEGER PRIMARY KEY,
-    name TEXT NOT NULL,
-    name_ar TEXT NULL,
-    slug TEXT NOT NULL UNIQUE,
-    parent_category_id INTEGER NULL,
-    banner_image_url TEXT NULL,
-    is_featured INTEGER NOT NULL DEFAULT 0,
-    show_on_homepage INTEGER NOT NULL DEFAULT 0,
-    homepage_order INTEGER NOT NULL DEFAULT 0,
-    display_order INTEGER NOT NULL DEFAULT 0
-  )`);
-
-  await database.query(`CREATE TABLE IF NOT EXISTS category_fields (
-    id INTEGER PRIMARY KEY,
-    category_id INTEGER NOT NULL,
-    label TEXT NOT NULL,
-    field_key TEXT NOT NULL,
-    input_type TEXT NOT NULL DEFAULT 'text',
-    is_required INTEGER NOT NULL DEFAULT 0,
-    display_order INTEGER NOT NULL DEFAULT 0,
-    UNIQUE(category_id, field_key)
-  )`);
-
-  await database.query(`CREATE TABLE IF NOT EXISTS products (
-    id TEXT PRIMARY KEY,
-    external_id INTEGER NULL,
-    name TEXT NOT NULL,
-    name_ar TEXT NULL,
-    slug TEXT NOT NULL UNIQUE,
-    sku TEXT NOT NULL UNIQUE,
-    brand TEXT NOT NULL DEFAULT 'Generic',
-    category TEXT NOT NULL DEFAULT '',
-    category_id INTEGER NULL,
-    description TEXT NOT NULL,
-    description_ar TEXT NULL,
-    image_url TEXT NOT NULL DEFAULT '/product-images/marine-essential.svg',
-    secondary_image_url TEXT NULL,
-    regular_price_aed_cents INTEGER NOT NULL DEFAULT 0,
-    sale_price_aed_cents INTEGER NULL,
-    price_aed_cents INTEGER NOT NULL DEFAULT 0,
-    has_variants INTEGER NOT NULL DEFAULT 0,
-    is_featured INTEGER NOT NULL DEFAULT 0,
-    is_new_arrival INTEGER NOT NULL DEFAULT 0,
-    is_top_selling INTEGER NOT NULL DEFAULT 0,
-    is_best_deal INTEGER NOT NULL DEFAULT 0,
-    is_banner_product INTEGER NOT NULL DEFAULT 0,
-    homepage_order INTEGER NOT NULL DEFAULT 0,
-    is_active INTEGER NOT NULL DEFAULT 1,
-    stock_quantity INTEGER NOT NULL,
-    created_at TEXT NOT NULL,
-    created_by_user_id TEXT NOT NULL
-  )`);
-
-  await database.query(`CREATE TABLE IF NOT EXISTS homepage_banners (
-    id INTEGER PRIMARY KEY,
-    image_url TEXT NOT NULL,
-    title TEXT NOT NULL,
-    subtitle TEXT NOT NULL,
-    button_text TEXT NOT NULL,
-    button_link TEXT NOT NULL,
-    is_active INTEGER NOT NULL DEFAULT 1,
-    sort_order INTEGER NOT NULL DEFAULT 0
-  )`);
-
-  await database.query(`CREATE TABLE IF NOT EXISTS product_variants (
-    id INTEGER PRIMARY KEY,
-    product_id TEXT NOT NULL,
-    product_external_id INTEGER NOT NULL,
-    variant_name TEXT NOT NULL,
-    sku_suffix TEXT NOT NULL,
-    price_aed_cents INTEGER NOT NULL,
-    stock_quantity INTEGER NOT NULL
-  )`);
-
-  await database.query(`CREATE TABLE IF NOT EXISTS customer_profiles (
-    id INTEGER PRIMARY KEY,
-    name TEXT NOT NULL,
-    email TEXT NOT NULL,
-    phone TEXT NULL,
-    role TEXT NOT NULL,
-    country TEXT NULL,
-    date_joined TEXT NULL,
-    status TEXT NOT NULL
-  )`);
-
-  await database.query(`CREATE TABLE IF NOT EXISTS orders (
-    id INTEGER PRIMARY KEY,
-    customer_profile_id INTEGER NOT NULL,
-    order_date TEXT NOT NULL,
-    status TEXT NOT NULL,
-    shipping_zone TEXT NOT NULL,
-    currency TEXT NOT NULL,
-    subtotal_aed_cents INTEGER NOT NULL,
-    shipping_fee_aed_cents INTEGER NOT NULL,
-    total_aed_cents INTEGER NOT NULL,
-    payment_method TEXT NOT NULL
-  )`);
-
-  await database.query(`CREATE TABLE IF NOT EXISTS order_items (
-    id INTEGER PRIMARY KEY,
-    order_id INTEGER NOT NULL,
-    variant_or_product_id INTEGER NOT NULL,
-    product_name TEXT NOT NULL,
-    quantity INTEGER NOT NULL,
-    unit_price_aed_cents INTEGER NOT NULL,
-    line_total_aed_cents INTEGER NOT NULL
-  )`);
-
-  await database.query(`CREATE TABLE IF NOT EXISTS coupons (
-    id INTEGER PRIMARY KEY,
-    code TEXT NOT NULL UNIQUE,
-    discount_type TEXT NOT NULL,
-    value_text TEXT NOT NULL,
-    min_order_aed_cents INTEGER NOT NULL,
-    expiry_date TEXT NOT NULL,
-    status TEXT NOT NULL
-  )`);
-
-  await ensureProductColumns();
-  await ensureCategoryColumns();
-  await ensureBrandColumns();
+  await initializeMySqlSchema(database);
   await seedHomepageBanners();
   await syncAuthUsers();
   await syncMarineCatalogSeed();
-}
-
-async function ensureProductColumns(): Promise<void> {
-  const database = getDatabaseConnection();
-  const columns = await database.query<{ name: string }>("PRAGMA table_info(products)", {
-    type: QueryTypes.SELECT,
-  });
-  const existing = new Set(columns.map((column) => column.name));
-  const additions = [
-    ["external_id", "ALTER TABLE products ADD COLUMN external_id INTEGER NULL"],
-    ["brand", "ALTER TABLE products ADD COLUMN brand TEXT NOT NULL DEFAULT 'Generic'"],
-    ["category", "ALTER TABLE products ADD COLUMN category TEXT NOT NULL DEFAULT ''"],
-    ["category_id", "ALTER TABLE products ADD COLUMN category_id INTEGER NULL"],
-    [
-      "secondary_image_url",
-      "ALTER TABLE products ADD COLUMN secondary_image_url TEXT NULL",
-    ],
-    [
-      "regular_price_aed_cents",
-      "ALTER TABLE products ADD COLUMN regular_price_aed_cents INTEGER NOT NULL DEFAULT 0",
-    ],
-    [
-      "sale_price_aed_cents",
-      "ALTER TABLE products ADD COLUMN sale_price_aed_cents INTEGER NULL",
-    ],
-    [
-      "price_aed_cents",
-      "ALTER TABLE products ADD COLUMN price_aed_cents INTEGER NOT NULL DEFAULT 0",
-    ],
-    [
-      "has_variants",
-      "ALTER TABLE products ADD COLUMN has_variants INTEGER NOT NULL DEFAULT 0",
-    ],
-    [
-      "is_featured",
-      "ALTER TABLE products ADD COLUMN is_featured INTEGER NOT NULL DEFAULT 0",
-    ],
-    ["is_active", "ALTER TABLE products ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1"],
-    ["is_new_arrival", "ALTER TABLE products ADD COLUMN is_new_arrival INTEGER NOT NULL DEFAULT 0"],
-    ["is_top_selling", "ALTER TABLE products ADD COLUMN is_top_selling INTEGER NOT NULL DEFAULT 0"],
-    ["is_best_deal", "ALTER TABLE products ADD COLUMN is_best_deal INTEGER NOT NULL DEFAULT 0"],
-    ["is_banner_product", "ALTER TABLE products ADD COLUMN is_banner_product INTEGER NOT NULL DEFAULT 0"],
-    ["homepage_order", "ALTER TABLE products ADD COLUMN homepage_order INTEGER NOT NULL DEFAULT 0"],
-    ["name_ar", "ALTER TABLE products ADD COLUMN name_ar TEXT NULL"],
-    ["description_ar", "ALTER TABLE products ADD COLUMN description_ar TEXT NULL"],
-  ] as const;
-
-  for (const [name, statement] of additions) {
-    if (!existing.has(name)) {
-      await database.query(statement);
-    }
-  }
-}
-
-async function ensureCategoryColumns(): Promise<void> {
-  const database = getDatabaseConnection();
-  const columns = await database.query<{ name: string }>("PRAGMA table_info(categories)", {
-    type: QueryTypes.SELECT,
-  });
-  const existing = new Set(columns.map((column) => column.name));
-  const additions = [
-    ["show_on_homepage", "ALTER TABLE categories ADD COLUMN show_on_homepage INTEGER NOT NULL DEFAULT 0"],
-    ["homepage_order", "ALTER TABLE categories ADD COLUMN homepage_order INTEGER NOT NULL DEFAULT 0"],
-    ["name_ar", "ALTER TABLE categories ADD COLUMN name_ar TEXT NULL"],
-  ] as const;
-  for (const [name, statement] of additions) {
-    if (!existing.has(name)) await database.query(statement);
-  }
-}
-
-async function ensureBrandColumns(): Promise<void> {
-  const database = getDatabaseConnection();
-  const columns = await database.query<{ name: string }>("PRAGMA table_info(brands)", { type: QueryTypes.SELECT });
-  if (!columns.some((column) => column.name === "name_ar")) {
-    await database.query("ALTER TABLE brands ADD COLUMN name_ar TEXT NULL");
-  }
 }
 
 async function seedHomepageBanners(): Promise<void> {
@@ -954,9 +845,30 @@ async function seedHomepageBanners(): Promise<void> {
   );
   if (Number(existing?.count ?? 0) > 0) return;
   const banners = [
-    ["/product-images/marine-essential.svg", "Ready for every mile at sea", "Marine parts, trusted brands, UAE delivery.", "Shop essentials", "#catalog", 1],
-    ["/product-images/life-jacket.svg", "Safety is never optional", "Professional life-saving equipment for every vessel.", "Explore safety", "#catalog", 2],
-    ["/product-images/battery.svg", "Power your next voyage", "Reliable electrical systems and onboard charging.", "Shop electrical", "#catalog", 3],
+    [
+      "/product-images/marine-essential.svg",
+      "Ready for every mile at sea",
+      "Marine parts, trusted brands, UAE delivery.",
+      "Shop essentials",
+      "#catalog",
+      1,
+    ],
+    [
+      "/product-images/life-jacket.svg",
+      "Safety is never optional",
+      "Professional life-saving equipment for every vessel.",
+      "Explore safety",
+      "#catalog",
+      2,
+    ],
+    [
+      "/product-images/battery.svg",
+      "Power your next voyage",
+      "Reliable electrical systems and onboard charging.",
+      "Shop electrical",
+      "#catalog",
+      3,
+    ],
   ] as const;
   for (const [imageUrl, title, subtitle, buttonText, buttonLink, sortOrder] of banners) {
     await database.query(
@@ -975,12 +887,9 @@ async function syncAuthUsers(): Promise<void> {
     await database.query(
       `INSERT INTO users (id, name, username, email, password, role)
        VALUES (:id, :name, :username, :email, :password, :role)
-       ON CONFLICT(id) DO UPDATE SET
-         name = excluded.name,
-         username = excluded.username,
-         email = excluded.email,
-         password = excluded.password,
-         role = excluded.role`,
+       ON DUPLICATE KEY UPDATE
+         name = VALUES(name), username = VALUES(username), email = VALUES(email),
+         password = VALUES(password), role = VALUES(role)`,
       { replacements: user },
     );
   }
@@ -1011,11 +920,9 @@ async function syncMarineCatalogSeed(): Promise<void> {
        ) VALUES (
          :id, :name, :slug, :logoText, :displayOrder
        )
-       ON CONFLICT(id) DO UPDATE SET
-         name = excluded.name,
-         slug = excluded.slug,
-         logo_text = excluded.logo_text,
-         display_order = excluded.display_order`,
+       ON DUPLICATE KEY UPDATE
+         name = VALUES(name), slug = VALUES(slug), logo_text = VALUES(logo_text),
+         display_order = VALUES(display_order)`,
       {
         replacements: {
           displayOrder: brand.displayOrder,
@@ -1035,13 +942,10 @@ async function syncMarineCatalogSeed(): Promise<void> {
        ) VALUES (
          :id, :name, :slug, :parentCategoryId, :bannerImageUrl, :isFeatured, :displayOrder
        )
-       ON CONFLICT(id) DO UPDATE SET
-         name = excluded.name,
-         slug = excluded.slug,
-         parent_category_id = excluded.parent_category_id,
-         banner_image_url = excluded.banner_image_url,
-         is_featured = excluded.is_featured,
-         display_order = excluded.display_order`,
+       ON DUPLICATE KEY UPDATE
+         name = VALUES(name), slug = VALUES(slug), parent_category_id = VALUES(parent_category_id),
+         banner_image_url = VALUES(banner_image_url), is_featured = VALUES(is_featured),
+         display_order = VALUES(display_order)`,
       {
         replacements: {
           bannerImageUrl: category.bannerImageUrl,
@@ -1056,7 +960,9 @@ async function syncMarineCatalogSeed(): Promise<void> {
     );
   }
 
-  const categoryNameById = new Map(marineCategories.map((category) => [category.id, category.name]));
+  const categoryNameById = new Map(
+    marineCategories.map((category) => [category.id, category.name]),
+  );
 
   for (const product of marineProducts) {
     const effectivePrice = product.salePriceAedCents ?? product.regularPriceAedCents;
@@ -1071,23 +977,13 @@ async function syncMarineCatalogSeed(): Promise<void> {
          :imageUrl, NULL, :regularPriceAedCents, :salePriceAedCents,
          :priceAedCents, 0, :isFeatured, 1, :stockQuantity, :createdAt, :createdByUserId
        )
-       ON CONFLICT(sku) DO UPDATE SET
-         external_id = excluded.external_id,
-         name = excluded.name,
-         slug = excluded.slug,
-         brand = excluded.brand,
-         category = excluded.category,
-         category_id = excluded.category_id,
-         description = excluded.description,
-         image_url = excluded.image_url,
-         secondary_image_url = excluded.secondary_image_url,
-         regular_price_aed_cents = excluded.regular_price_aed_cents,
-         sale_price_aed_cents = excluded.sale_price_aed_cents,
-         price_aed_cents = excluded.price_aed_cents,
-         has_variants = excluded.has_variants,
-         is_featured = excluded.is_featured,
-         is_active = excluded.is_active,
-         stock_quantity = excluded.stock_quantity`,
+       ON DUPLICATE KEY UPDATE
+         external_id = VALUES(external_id), name = VALUES(name), slug = VALUES(slug), brand = VALUES(brand),
+         category = VALUES(category), category_id = VALUES(category_id), description = VALUES(description),
+         image_url = VALUES(image_url), secondary_image_url = VALUES(secondary_image_url),
+         regular_price_aed_cents = VALUES(regular_price_aed_cents), sale_price_aed_cents = VALUES(sale_price_aed_cents),
+         price_aed_cents = VALUES(price_aed_cents), has_variants = VALUES(has_variants),
+         is_featured = VALUES(is_featured), is_active = VALUES(is_active), stock_quantity = VALUES(stock_quantity)`,
       {
         replacements: {
           brand: product.brand,
@@ -1113,9 +1009,9 @@ async function syncMarineCatalogSeed(): Promise<void> {
   }
 
   await database.query(
-    `INSERT INTO seed_meta (key, value)
+    `INSERT INTO seed_meta (\`key\`, value)
      VALUES ('marine_catalog_version', :version)
-     ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+     ON DUPLICATE KEY UPDATE value = VALUES(value)`,
     { replacements: { version: marineCatalogSeedVersion } },
   );
 }

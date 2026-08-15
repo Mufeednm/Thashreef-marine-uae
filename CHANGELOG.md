@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Replace the SQLite demo runtime with Hostinger-ready MySQL persistence, including MySQL schema initialization, upserts, analytics queries, and runtime database configuration.
+- Render data-driven routes dynamically so deployment builds do not attempt to access the production database before environment variables are configured.
 - Rebrand the customer storefront, admin workspace, page metadata, checkout, and support details as Marsa Edge Marine LLC, using the supplied Marsa Edge logo asset.
 - Replace the misleading mini-chart treatment with larger, real record-based customer, order, and order-value comparisons; remove the obsolete Workbook import sidebar message.
 - Add optional Arabic name/description fields for products and Arabic names for categories and brands, persisted in SQLite and used by product cards/detail pages when Arabic is selected.

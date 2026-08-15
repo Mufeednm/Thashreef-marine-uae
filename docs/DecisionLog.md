@@ -1,5 +1,11 @@
 # Decision Log
 
+## 2026-08-15 - Use MySQL for Hostinger production deployments
+
+- **Decision:** Replace the SQLite runtime with MySQL through Sequelize.
+- **Reason:** Hostinger's Node runtime cannot load the `sqlite3` native binary because it requires GLIBC 2.38; MySQL is managed and durable on the hosting plan.
+- **Impact:** Database configuration is supplied only through server-side environment variables, schema initialization is MySQL-compatible, and dynamic routes defer database access until runtime.
+
 ## 2026-08-09 - Use the supplied Marsa Edge brand identity
 
 The customer storefront and protected admin workspace use Marsa Edge Marine LLC as their visible business name. The supplied Marsa Edge logo is retained as a local public asset and positioned within a fixed responsive header frame so it remains readable without introducing mobile overflow.
