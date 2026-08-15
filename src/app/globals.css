@@ -49,3 +49,24 @@ html[dir="rtl"] .rtl-mirror {
   background: rgba(45, 212, 191, 0.35);
   color: #0f172a;
 }
+
+.icon-button {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border: 1px solid rgb(226 232 240);
+  border-radius: 0.75rem;
+  color: rgb(71 85 105);
+  transition: color 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+.icon-button:hover {
+  border-color: #0e568f;
+  color: #0e568f;
+}
+
+.icon-button:focus-visible {
+  outline: 2px solid #f05a28;
+  outline-offset: 2px;
+}

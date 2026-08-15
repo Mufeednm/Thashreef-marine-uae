@@ -37,14 +37,6 @@ export const createProductSchema = z.object({
     .refine((value) => value === null || value >= 0, {
       error: "Sale price cannot be negative.",
     }),
-  sku: z
-    .string()
-    .trim()
-    .min(3, { error: "SKU must be at least 3 characters long." })
-    .max(24, { error: "SKU must be 24 characters or less." })
-    .regex(/^[A-Za-z0-9-]+$/, {
-      error: "SKU can only use letters, numbers, and hyphens.",
-    }),
 });
 
 export const createCategorySchema = z.object({
@@ -60,10 +52,6 @@ export const createCategorySchema = z.object({
         .filter(Boolean)
         .slice(0, 24),
     ),
-  displayOrder: z.coerce
-    .number()
-    .int({ error: "Display order must be a whole number." })
-    .min(0, { error: "Display order cannot be negative." }),
   isFeatured: z
     .string()
     .optional()
@@ -83,8 +71,6 @@ export const createCategorySchema = z.object({
 });
 
 export const brandSchema = z.object({
-  displayOrder: z.coerce.number().int().min(0, { error: "Display order cannot be negative." }),
-  logoText: z.string().trim().min(1, { error: "Logo text is required." }).max(24),
   name: z.string().trim().min(2, { error: "Brand name must be at least 2 characters long." }).max(80),
   nameAr: z.string().trim().max(80, { error: "Arabic brand name must be 80 characters or less." }).optional().transform((value) => value || null),
 });

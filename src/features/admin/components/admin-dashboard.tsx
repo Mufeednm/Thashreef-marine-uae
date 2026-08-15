@@ -181,7 +181,6 @@ export function AdminDashboard({ products }: AdminDashboardProps): ReactElement 
                   >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-bold text-slate-800">{product.name}</p>
-                      <p className="mt-1 text-xs text-slate-500">{product.sku}</p>
                     </div>
                     <span className="rounded-md bg-white px-2 py-1 text-xs font-bold text-amber-700">
                       {product.stockQuantity} left
@@ -221,7 +220,6 @@ export function AdminDashboard({ products }: AdminDashboardProps): ReactElement 
                     <tr className="hover:bg-slate-50" key={product.id}>
                       <td className="max-w-[280px] px-5 py-4">
                         <p className="truncate font-bold text-slate-800">{product.name}</p>
-                        <p className="mt-1 text-xs text-slate-500">{product.sku}</p>
                       </td>
                       <td className="px-5 py-4 text-slate-600">{product.category}</td>
                       <td className="px-5 py-4 font-semibold text-slate-800">

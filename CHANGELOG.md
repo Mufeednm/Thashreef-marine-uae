@@ -2,6 +2,39 @@
 
 ## Unreleased
 
+- Prevent category-parent loops, require email-and-password sign-in, and send order confirmation emails through configured SMTP.
+- Remove Display Order from all administrator brand and category forms, tables, and detail dialogs while preserving existing sort values internally.
+- Enlarge storefront brand imagery and add the uploaded brand image to the public brand catalogue header.
+- Remove the administrator-facing brand logo-label field and make an uploaded brand image mandatory for every newly created brand and any legacy brand without an image.
+- Use explicit Username and Password fields for sign-in, remove visible administrator credential examples, and preserve direct administrator routing to the protected workspace after authentication.
+- Replace the admin order PDF download control with a print-ready 100 × 150 mm parcel label containing the Marsa Edge Marine name, customer, delivery address, order date, and ordered products.
+- Remove VAT from checkout totals and order records, and replace the basic completion message with a clear order-request confirmation and email follow-up notice.
+- Enforce unique customer email and normalized international mobile number, with both registration feedback and a MySQL unique phone index.
+- Remove demo credential hints and all local non-admin accounts; retain only the hashed `admin` account, and route successful administrator sign-ins to `/admin`.
+- Harden customer account registration: hash every password with scrypt, record the user and customer profile atomically, hash seeded sign-in accounts, and remove plaintext-password login support.
+- Raise the Server Action request limit to 16 MB so three valid 5 MB product gallery uploads can be saved without a client-side fetch failure.
+- Remove manual multipart form attributes from server-action forms to prevent React console errors; simplify product creation and indicate multi-image galleries on customer product cards.
+- Remove Variants from the admin workspace and keep product, brand, and category inspection inside consistent in-page detail modals.
+- Add a three-image product gallery with upload previews, persist full delivery addresses and order items, and add admin order-detail dialogs with per-order PDF downloads.
+- Anchor desktop category flyout menus directly below their selected category and improve customer registration with country-code selection, inline field errors, and retained form values after an error.
+- Restore the homepage Accessory spotlight with photorealistic marine-item images for safety gear, anchoring, and pumps; move the brand rail above Shop by Category and remove the bulk-order promotion.
+- Remove the homepage Safety bundle and Mooring essentials promotional cards to keep catalogue discovery focused.
+- Remove the Latest projects gallery, rail scrolling helper labels, and customer-facing Featured labels from product cards and detail pages.
+- Refresh the homepage hero with a purpose-made Dubai marina image, sharper text hierarchy, and a stronger responsive Accessory spotlight panel.
+- Limit the homepage carousel to three consistent, locally stored photorealistic Dubai marine scenes for marina supply, safety gear, and maintenance.
+- Replace the hero spotlight imagery with live new-product cards, including catalogue images, prices, detail links, and add-to-cart controls.
+- Remove the header Quick quote control and make the floating WhatsApp contact action a clear, accessible icon button.
+- Hide the Next.js local-only development indicator so it does not overlap the storefront WhatsApp contact button.
+
+- Remove SKU fields and SKU display from customer and administrator workflows; generate a private internal reference for new products.
+- Redesign Products, Brands, and Categories as table-first admin screens with modal create/edit flows and labelled view, edit, and delete icon actions.
+- Replace the footer service-desk contact block with the Marsa Edge Marine Dubai, Al Jaddaf, Drydocks location details.
+
+- Add admin-only JPG, PNG, and WebP upload controls for product, category, and brand images; persist uploaded brand logos in MySQL.
+- Remove the four storefront trust-strip statements and add a dedicated Return & Refund policy page linked from the footer.
+- Update checkout delivery to AED 20 below AED 700 and free UAE delivery at AED 700 or above, enforced in both the summary and order API.
+- Simplify the small-phone header by hiding the constrained inline search and using the touch-friendly category drawer for navigation.
+
 - Replace the SQLite demo runtime with Hostinger-ready MySQL persistence, including MySQL schema initialization, upserts, analytics queries, and runtime database configuration.
 - Bundle the MySQL driver explicitly in the Next.js server build so Sequelize can load it at runtime on Hostinger.
 - Quote the MySQL `seed_meta` key identifier during runtime initialization.

@@ -44,9 +44,6 @@ export function ProductGrid({ products }: ProductGridProps): ReactElement {
                   </p>
                   <h3 className="mt-2 text-xl font-semibold">{product.name}</h3>
                 </div>
-                <span className="rounded-full border border-white/20 px-3 py-1 text-xs font-medium">
-                  {product.sku}
-                </span>
               </div>
             </div>
 

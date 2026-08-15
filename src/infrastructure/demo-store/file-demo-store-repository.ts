@@ -2,7 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { QueryTypes } from "sequelize";
+import { QueryTypes, type Transaction } from "sequelize";
 import { z } from "zod";
 import type { DemoUser } from "@/domain/auth/user";
 import type { Category } from "@/domain/catalog/category";
@@ -25,6 +25,7 @@ import type {
 } from "@/domain/demo-store/demo-store-repository";
 import { getDatabaseConnection } from "@/infrastructure/database/sequelize";
 import { initializeMySqlSchema } from "@/infrastructure/database/mysql-schema";
+import { hashPassword } from "@/shared/security/password-hash";
 import {
   marineBrands,
   marineCatalogSeedVersion,
@@ -60,19 +61,20 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     await ensureDatabase();
     const database = getDatabaseConnection();
     await database.query(
-      `INSERT INTO brands (name, name_ar, slug, logo_text, display_order)
-       VALUES (:name, :nameAr, :slug, :logoText, :displayOrder)`,
+      `INSERT INTO brands (name, name_ar, slug, logo_text, image_url, display_order)
+       VALUES (:name, :nameAr, :slug, :logoText, :imageUrl, :displayOrder)`,
       {
         replacements: {
           ...input,
           name: input.name.trim(),
           nameAr: input.nameAr?.trim() || null,
           logoText: input.logoText.trim(),
+          imageUrl: input.imageUrl?.trim() || null,
         },
       },
     );
     const [brand] = await database.query<Brand>(
-      `SELECT id, name, name_ar AS nameAr, slug, logo_text AS logoText, display_order AS displayOrder
+      `SELECT id, name, name_ar AS nameAr, slug, logo_text AS logoText, image_url AS imageUrl, display_order AS displayOrder
        FROM brands WHERE slug = :slug LIMIT 1`,
       { replacements: { slug: input.slug }, type: QueryTypes.SELECT },
     );
@@ -126,7 +128,8 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
       priceAedCents: effectivePrice,
       regularPriceAedCents: input.regularPriceAedCents,
       salePriceAedCents: input.salePriceAedCents ?? null,
-      secondaryImageUrl: null,
+      secondaryImageUrl: input.secondaryImageUrl?.trim() || null,
+      tertiaryImageUrl: input.tertiaryImageUrl?.trim() || null,
       sku: input.sku.trim().toUpperCase(),
       slug: input.slug,
       stockQuantity: input.stockQuantity,
@@ -135,11 +138,11 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     await getDatabaseConnection().query(
       `INSERT INTO products (
          id, external_id, name, name_ar, slug, sku, brand, category, category_id, description, description_ar,
-         image_url, secondary_image_url, regular_price_aed_cents, sale_price_aed_cents,
+         image_url, secondary_image_url, tertiary_image_url, regular_price_aed_cents, sale_price_aed_cents,
          price_aed_cents, has_variants, is_featured, is_new_arrival, is_top_selling, is_best_deal, is_banner_product, homepage_order, is_active, stock_quantity, created_at, created_by_user_id
        ) VALUES (
          :id, NULL, :name, :nameAr, :slug, :sku, :brand, :category, :categoryId, :description, :descriptionAr,
-         :imageUrl, :secondaryImageUrl, :regularPriceAedCents, :salePriceAedCents,
+         :imageUrl, :secondaryImageUrl, :tertiaryImageUrl, :regularPriceAedCents, :salePriceAedCents,
          :priceAedCents, :hasVariants, :isFeatured, :isNewArrival, :isTopSelling, :isBestDeal, :isBannerProduct, :homepageOrder, :isActive, :stockQuantity, :createdAt, :createdByUserId
        )`,
       {
@@ -179,6 +182,8 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
       `UPDATE products SET
         name = :name, name_ar = :nameAr, sku = :sku, brand = :brand, category = :category, category_id = :categoryId,
         description = :description, description_ar = :descriptionAr, image_url = COALESCE(NULLIF(:imageUrl, ''), image_url),
+        secondary_image_url = COALESCE(NULLIF(:secondaryImageUrl, ''), secondary_image_url),
+        tertiary_image_url = COALESCE(NULLIF(:tertiaryImageUrl, ''), tertiary_image_url),
         regular_price_aed_cents = :regularPriceAedCents, sale_price_aed_cents = :salePriceAedCents,
         price_aed_cents = :priceAedCents, is_featured = :isFeatured, is_new_arrival = :isNewArrival,
         is_top_selling = :isTopSelling, is_best_deal = :isBestDeal, is_banner_product = :isBannerProduct,
@@ -196,6 +201,8 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
           description: input.description.trim(),
           descriptionAr: input.descriptionAr?.trim() || null,
           imageUrl: input.imageUrl?.trim() ?? "",
+          secondaryImageUrl: input.secondaryImageUrl?.trim() ?? "",
+          tertiaryImageUrl: input.tertiaryImageUrl?.trim() ?? "",
           regularPriceAedCents: input.regularPriceAedCents,
           salePriceAedCents: input.salePriceAedCents ?? null,
           priceAedCents: input.salePriceAedCents ?? input.regularPriceAedCents,
@@ -295,18 +302,19 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     await ensureDatabase();
     const database = getDatabaseConnection();
     const [existing] = await database.query<Brand>(
-      "SELECT id, name, name_ar AS nameAr, slug, logo_text AS logoText, display_order AS displayOrder FROM brands WHERE id = :id LIMIT 1",
+      "SELECT id, name, name_ar AS nameAr, slug, logo_text AS logoText, image_url AS imageUrl, display_order AS displayOrder FROM brands WHERE id = :id LIMIT 1",
       { replacements: { id }, type: QueryTypes.SELECT },
     );
     if (!existing) return null;
     await database.query(
-      `UPDATE brands SET name = :name, name_ar = :nameAr, logo_text = :logoText, display_order = :displayOrder WHERE id = :id`,
+      `UPDATE brands SET name = :name, name_ar = :nameAr, logo_text = :logoText, image_url = COALESCE(NULLIF(:imageUrl, ''), image_url), display_order = :displayOrder WHERE id = :id`,
       {
         replacements: {
           id,
           name: input.name.trim(),
           nameAr: input.nameAr?.trim() || null,
           logoText: input.logoText.trim(),
+          imageUrl: input.imageUrl?.trim() ?? "",
           displayOrder: input.displayOrder,
         },
       },
@@ -321,6 +329,7 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
       name: input.name.trim(),
       nameAr: input.nameAr?.trim() || null,
       logoText: input.logoText.trim(),
+      imageUrl: input.imageUrl?.trim() || existing.imageUrl,
       displayOrder: input.displayOrder,
     };
   }
@@ -426,32 +435,47 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
   async createCustomer(input: CreateCustomerInput): Promise<DemoUser | null> {
     await ensureDatabase();
     const database = getDatabaseConnection();
-    const existing = await this.findUserByEmail(input.email);
-    if (existing) return null;
-
     const id = randomUUID();
     const username = `customer-${id.slice(0, 8)}`;
     const email = input.email.trim().toLowerCase();
     const name = input.name.trim();
-    await database.query(
-      `INSERT INTO users (id, name, username, email, password, role)
-       VALUES (:id, :name, :username, :email, :password, 'customer')`,
-      { replacements: { id, name, username, email, password: input.password } },
-    );
-    await database.query(
-      `INSERT INTO customer_profiles (name, email, phone, role, date_joined, status)
-       VALUES (:name, :email, :phone, 'customer', :dateJoined, 'active')`,
-      {
-        replacements: {
-          name,
-          email,
-          phone: input.phone.trim(),
-          dateJoined: new Date().toISOString(),
-        },
-      },
-    );
+    try {
+      return await database.transaction(async (transaction: Transaction) => {
+        const [existing] = await database.query<{ id: string }>(
+          "SELECT id FROM users WHERE lower(email) = lower(:email) LIMIT 1",
+          { replacements: { email }, transaction, type: QueryTypes.SELECT },
+        );
+        if (existing) return null;
+        const [existingPhone] = await database.query<{ id: number }>(
+          "SELECT id FROM customer_profiles WHERE phone = :phone LIMIT 1",
+          { replacements: { phone: input.phone.trim() }, transaction, type: QueryTypes.SELECT },
+        );
+        if (existingPhone) return null;
 
-    return { id, name, username, email, password: input.password, role: "customer" };
+        await database.query(
+          `INSERT INTO users (id, name, username, email, password, role)
+           VALUES (:id, :name, :username, :email, :password, 'customer')`,
+          { replacements: { id, name, username, email, password: input.password }, transaction },
+        );
+        await database.query(
+          `INSERT INTO customer_profiles (name, email, phone, role, date_joined, status)
+           VALUES (:name, :email, :phone, 'customer', :dateJoined, 'active')`,
+          {
+            replacements: {
+              name,
+              email,
+              phone: input.phone.trim(),
+              dateJoined: new Date().toISOString(),
+            },
+            transaction,
+          },
+        );
+        return { id, name, username, email, password: input.password, role: "customer" };
+      });
+    } catch (error) {
+      if (isDuplicateEntryError(error)) return null;
+      throw error;
+    }
   }
 
   async createOrder(input: CreateOrderInput): Promise<AdminRecentOrder> {
@@ -483,11 +507,12 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     if (!customer) throw new Error("Customer profile was not created.");
     const orderDate = new Date().toISOString();
     await database.query(
-      `INSERT INTO orders (customer_profile_id, order_date, status, shipping_zone, currency, subtotal_aed_cents, shipping_fee_aed_cents, total_aed_cents, payment_method)
-       VALUES (:customerProfileId, :orderDate, 'new', :shippingZone, 'AED', :subtotal, :shipping, :total, :paymentMethod)`,
+      `INSERT INTO orders (customer_profile_id, order_date, status, shipping_zone, currency, subtotal_aed_cents, shipping_fee_aed_cents, total_aed_cents, payment_method, delivery_address)
+       VALUES (:customerProfileId, :orderDate, 'new', :shippingZone, 'AED', :subtotal, :shipping, :total, :paymentMethod, :deliveryAddress)`,
       {
         replacements: {
           customerProfileId: customer.id,
+          deliveryAddress: input.deliveryAddress,
           orderDate,
           paymentMethod: input.paymentMethod,
           shipping: input.shippingFeeAedCents,
@@ -546,6 +571,16 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     return customers[0] ?? null;
   }
 
+  async findCustomerByPhone(phone: string): Promise<AdminCustomer | null> {
+    await ensureDatabase();
+    const customers = await getDatabaseConnection().query<AdminCustomer>(
+      `SELECT id, name, email, phone, date_joined AS dateJoined, status
+       FROM customer_profiles WHERE phone = :phone ORDER BY id DESC LIMIT 1`,
+      { replacements: { phone }, type: QueryTypes.SELECT },
+    );
+    return customers[0] ?? null;
+  }
+
   async getAdminOverviewMetrics(): Promise<AdminOverviewMetrics> {
     await ensureDatabase();
 
@@ -583,7 +618,7 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
          name,
          name_ar AS nameAr,
          slug,
-         logo_text AS logoText,
+         logo_text AS logoText, image_url AS imageUrl,
          display_order AS displayOrder
        FROM brands
        ORDER BY display_order, name`,
@@ -734,6 +769,7 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
          p.description_ar AS descriptionAr,
          p.image_url AS imageUrl,
          p.secondary_image_url AS secondaryImageUrl,
+         p.tertiary_image_url AS tertiaryImageUrl,
          p.regular_price_aed_cents AS regularPriceAedCents,
          p.sale_price_aed_cents AS salePriceAedCents,
          p.price_aed_cents AS priceAedCents,
@@ -809,7 +845,7 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     return getDatabaseConnection().query<AdminOrder>(
       `SELECT o.id, COALESCE(cp.name, 'Guest customer') AS customerName, COALESCE(cp.email, '') AS customerEmail,
         o.order_date AS orderDate, o.status, o.total_aed_cents AS totalAedCents, o.payment_method AS paymentMethod,
-        o.shipping_zone AS shippingZone
+        o.shipping_zone AS shippingZone, cp.phone AS customerPhone
        FROM orders o LEFT JOIN customer_profiles cp ON cp.id = o.customer_profile_id
        ORDER BY o.order_date DESC, o.id DESC LIMIT :limit`,
       { replacements: { limit }, type: QueryTypes.SELECT },
@@ -821,6 +857,25 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     await getDatabaseConnection().query("UPDATE orders SET status = :status WHERE id = :id", {
       replacements: { id, status },
     });
+  }
+
+  async getOrderDetail(id: number): Promise<import("@/domain/demo-store/demo-store-repository").AdminOrderDetail | null> {
+    await ensureDatabase();
+    const database = getDatabaseConnection();
+    const [order] = await database.query<import("@/domain/demo-store/demo-store-repository").AdminOrderDetail>(
+      `SELECT o.id, COALESCE(cp.name, 'Guest customer') AS customerName, COALESCE(cp.email, '') AS customerEmail,
+        cp.phone AS customerPhone, o.order_date AS orderDate, o.status, o.total_aed_cents AS totalAedCents,
+        o.payment_method AS paymentMethod, o.shipping_zone AS shippingZone, o.delivery_address AS deliveryAddress
+       FROM orders o LEFT JOIN customer_profiles cp ON cp.id = o.customer_profile_id WHERE o.id = :id LIMIT 1`,
+      { replacements: { id }, type: QueryTypes.SELECT },
+    );
+    if (!order) return null;
+    const items = await database.query<import("@/domain/demo-store/demo-store-repository").AdminOrderDetail["items"][number]>(
+      `SELECT id, product_name AS name, quantity, unit_price_aed_cents AS unitPriceAedCents,
+        line_total_aed_cents AS lineTotalAedCents FROM order_items WHERE order_id = :id ORDER BY id`,
+      { replacements: { id }, type: QueryTypes.SELECT },
+    );
+    return { ...order, items };
   }
 }
 
@@ -890,9 +945,13 @@ async function syncAuthUsers(): Promise<void> {
        ON DUPLICATE KEY UPDATE
          name = VALUES(name), username = VALUES(username), email = VALUES(email),
          password = VALUES(password), role = VALUES(role)`,
-      { replacements: user },
+      { replacements: { ...user, password: hashPassword(user.password) } },
     );
   }
+}
+
+function isDuplicateEntryError(error: unknown): boolean {
+  return error instanceof Error && /duplicate entry|unique constraint/i.test(error.message);
 }
 
 async function syncMarineCatalogSeed(): Promise<void> {

@@ -38,8 +38,20 @@ export interface AdminRecentOrder {
 
 export interface AdminOrder extends AdminRecentOrder {
   customerEmail: string;
+  customerPhone: string | null;
   paymentMethod: string;
   shippingZone: string;
+}
+
+export interface AdminOrderDetail extends AdminOrder {
+  deliveryAddress: string | null;
+  items: Array<{
+    id: number;
+    lineTotalAedCents: number;
+    name: string;
+    quantity: number;
+    unitPriceAedCents: number;
+  }>;
 }
 
 export interface AdminCustomer {
@@ -63,11 +75,11 @@ export interface CreateOrderInput {
   customerName: string;
   phone: string;
   emirate: string;
+  deliveryAddress: string;
   paymentMethod: string;
   shippingFeeAedCents: number;
   subtotalAedCents: number;
   totalAedCents: number;
-  vatAedCents: number;
   lines: Array<{ productId: string; name: string; quantity: number; unitPriceAedCents: number }>;
 }
 
@@ -77,6 +89,7 @@ export interface Brand {
   nameAr: string | null;
   slug: string;
   logoText: string;
+  imageUrl: string | null;
   displayOrder: number;
 }
 
@@ -109,6 +122,7 @@ export interface DemoStoreRepository {
   findUserByEmail(emailOrUsername: string): Promise<DemoUser | null>;
   findUserById(id: string): Promise<DemoUser | null>;
   findCustomerByEmail(email: string): Promise<AdminCustomer | null>;
+  findCustomerByPhone(phone: string): Promise<AdminCustomer | null>;
   getAdminOverviewMetrics(): Promise<AdminOverviewMetrics>;
   getAdminActivityMetrics(): Promise<AdminActivityMetrics>;
   listBrands(): Promise<Brand[]>;
@@ -120,6 +134,7 @@ export interface DemoStoreRepository {
   listProductVariants(): Promise<ProductVariant[]>;
   listRecentOrders(limit: number): Promise<AdminRecentOrder[]>;
   listOrders(limit: number): Promise<AdminOrder[]>;
+  getOrderDetail(id: number): Promise<AdminOrderDetail | null>;
   updateOrderStatus(id: number, status: "accepted" | "rejected"): Promise<void>;
   updateBrand(id: number, input: Omit<Brand, "id" | "slug">): Promise<Brand | null>;
   updateCategory(

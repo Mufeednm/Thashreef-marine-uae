@@ -369,22 +369,6 @@
       "email": "admin@akbar.local",
       "password": "admin123",
       "role": "admin"
-    },
-    {
-      "id": "staff-001",
-      "name": "Support Staff",
-      "username": "staff",
-      "email": "support@thashreef.local",
-      "password": "Staff@123",
-      "role": "staff"
-    },
-    {
-      "id": "customer-001",
-      "name": "User",
-      "username": "user",
-      "email": "user@akbar.local",
-      "password": "userpassword",
-      "role": "customer"
     }
   ]
 }

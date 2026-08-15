@@ -17,7 +17,8 @@ export async function initializeMySqlSchema(database: Sequelize): Promise<void> 
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
     `CREATE TABLE IF NOT EXISTS brands (
       id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL UNIQUE, name_ar VARCHAR(255) NULL,
-      slug VARCHAR(191) NOT NULL UNIQUE, logo_text VARCHAR(255) NOT NULL, display_order INT NOT NULL DEFAULT 0
+      slug VARCHAR(191) NOT NULL UNIQUE, logo_text VARCHAR(255) NOT NULL, image_url TEXT NULL,
+      display_order INT NOT NULL DEFAULT 0
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
     `CREATE TABLE IF NOT EXISTS categories (
       id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, name_ar VARCHAR(255) NULL,
@@ -36,7 +37,7 @@ export async function initializeMySqlSchema(database: Sequelize): Promise<void> 
       id VARCHAR(64) PRIMARY KEY, external_id INT NULL, name VARCHAR(255) NOT NULL, name_ar VARCHAR(255) NULL,
       slug VARCHAR(191) NOT NULL UNIQUE, sku VARCHAR(191) NOT NULL UNIQUE, brand VARCHAR(255) NOT NULL DEFAULT 'Generic',
       category VARCHAR(255) NOT NULL DEFAULT '', category_id INT NULL, description TEXT NOT NULL, description_ar TEXT NULL,
-      image_url TEXT NOT NULL, secondary_image_url TEXT NULL, regular_price_aed_cents INT NOT NULL DEFAULT 0,
+      image_url TEXT NOT NULL, secondary_image_url TEXT NULL, tertiary_image_url TEXT NULL, regular_price_aed_cents INT NOT NULL DEFAULT 0,
       sale_price_aed_cents INT NULL, price_aed_cents INT NOT NULL DEFAULT 0, has_variants TINYINT(1) NOT NULL DEFAULT 0,
       is_featured TINYINT(1) NOT NULL DEFAULT 0, is_new_arrival TINYINT(1) NOT NULL DEFAULT 0,
       is_top_selling TINYINT(1) NOT NULL DEFAULT 0, is_best_deal TINYINT(1) NOT NULL DEFAULT 0,
@@ -58,13 +59,14 @@ export async function initializeMySqlSchema(database: Sequelize): Promise<void> 
     `CREATE TABLE IF NOT EXISTS customer_profiles (
       id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL,
       phone VARCHAR(64) NULL, role VARCHAR(32) NOT NULL, country VARCHAR(128) NULL,
-      date_joined VARCHAR(40) NULL, status VARCHAR(32) NOT NULL, INDEX customer_profiles_email_idx (email)
+      date_joined VARCHAR(40) NULL, status VARCHAR(32) NOT NULL, INDEX customer_profiles_email_idx (email),
+      UNIQUE KEY customer_profiles_phone_unique (phone)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
     `CREATE TABLE IF NOT EXISTS orders (
       id INT AUTO_INCREMENT PRIMARY KEY, customer_profile_id INT NOT NULL, order_date VARCHAR(40) NOT NULL,
       status VARCHAR(32) NOT NULL, shipping_zone VARCHAR(128) NOT NULL, currency CHAR(3) NOT NULL,
       subtotal_aed_cents INT NOT NULL, shipping_fee_aed_cents INT NOT NULL, total_aed_cents INT NOT NULL,
-      payment_method VARCHAR(64) NOT NULL, INDEX orders_customer_profile_id_idx (customer_profile_id),
+      payment_method VARCHAR(64) NOT NULL, delivery_address TEXT NULL, INDEX orders_customer_profile_id_idx (customer_profile_id),
       INDEX orders_order_date_idx (order_date)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
     `CREATE TABLE IF NOT EXISTS order_items (
@@ -80,4 +82,28 @@ export async function initializeMySqlSchema(database: Sequelize): Promise<void> 
   ];
 
   for (const statement of statements) await database.query(statement);
+  const [brandImageColumn] = await database.query("SHOW COLUMNS FROM brands LIKE 'image_url'");
+  if (Array.isArray(brandImageColumn) && brandImageColumn.length === 0) {
+    await database.query("ALTER TABLE brands ADD COLUMN image_url TEXT NULL AFTER logo_text");
+  }
+  const [productTertiaryImageColumn] = await database.query("SHOW COLUMNS FROM products LIKE 'tertiary_image_url'");
+  if (Array.isArray(productTertiaryImageColumn) && productTertiaryImageColumn.length === 0) {
+    await database.query("ALTER TABLE products ADD COLUMN tertiary_image_url TEXT NULL AFTER secondary_image_url");
+  }
+  const [orderDeliveryAddressColumn] = await database.query("SHOW COLUMNS FROM orders LIKE 'delivery_address'");
+  if (Array.isArray(orderDeliveryAddressColumn) && orderDeliveryAddressColumn.length === 0) {
+    await database.query("ALTER TABLE orders ADD COLUMN delivery_address TEXT NULL AFTER payment_method");
+  }
+  const [customerPhoneIndex] = await database.query("SHOW INDEX FROM customer_profiles WHERE Key_name = 'customer_profiles_phone_unique'");
+  if (Array.isArray(customerPhoneIndex) && customerPhoneIndex.length === 0) {
+    try {
+      await database.query("ALTER TABLE customer_profiles ADD UNIQUE KEY customer_profiles_phone_unique (phone)");
+    } catch (error) {
+      // Separate requests can initialize the schema at the same time in development.
+      // If another request created this index after the check above, it is safe to continue.
+      if (!(error instanceof Error) || !error.message.includes("Duplicate key name 'customer_profiles_phone_unique'")) {
+        throw error;
+      }
+    }
+  }
 }

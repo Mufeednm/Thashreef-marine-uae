@@ -13,4 +13,5 @@ The runtime uses MySQL 8 through Sequelize. On first startup it creates the curr
 - Subcategories and child categories have a parent category.
 - Products must be assigned to a non-main category.
 - `brands` stores seeded brand records used by storefront brand rails.
+- `brands.image_url` stores an optional administrator-uploaded logo image; category images are stored in `categories.banner_image_url` and product images in `products.image_url`.
 - `products.category_id` points to the assigned subcategory/child category while product queries also expose the resolved main category for navigation filtering.

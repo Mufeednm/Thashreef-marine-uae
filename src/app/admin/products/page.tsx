@@ -1,10 +1,9 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ReactElement } from "react";
 import {
   listCatalogCategories,
+  listCatalogBrands,
   listCatalogProducts,
-  listCatalogVariants,
 } from "@/application/catalog/catalog-service";
 import { restoreSessionUser } from "@/application/auth/auth-service";
 import { AdminProductsPage } from "@/features/admin/components/admin-products-page";
@@ -20,27 +19,19 @@ export default async function AdminProductsRoute(): Promise<ReactElement> {
     redirect("/admin/login");
   }
 
-  const [products, categories, variants] = await Promise.all([
+  const [products, categories, brands] = await Promise.all([
     listCatalogProducts(repository),
     listCatalogCategories(repository),
-    listCatalogVariants(repository),
+    listCatalogBrands(repository),
   ]);
 
   return (
     <AdminShell
-      actions={
-        <Link
-          className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[#f05a28] px-5 text-sm font-bold text-white transition hover:bg-[#d94d20]"
-          href="/admin/products/new"
-        >
-          Add product
-        </Link>
-      }
-      description="Browse the imported marine catalog, inspect pricing, and navigate product work from a dedicated list page."
+      description="Manage every product from one table. Create new products in a focused modal and use the action icons to view, edit, or delete records."
       eyebrow="Catalog"
       title="Products"
     >
-      <AdminProductsPage categories={categories} products={products} variants={variants} />
+      <AdminProductsPage brands={brands} categories={categories} products={products} />
     </AdminShell>
   );
 }

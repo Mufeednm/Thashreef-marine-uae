@@ -13,6 +13,7 @@ export interface Product {
   descriptionAr: string | null;
   imageUrl: string;
   secondaryImageUrl?: string | null;
+  tertiaryImageUrl?: string | null;
   regularPriceAedCents: number;
   salePriceAedCents?: number | null;
   priceAedCents: number;
@@ -38,6 +39,8 @@ export interface CreateProductInput {
   description: string;
   descriptionAr?: string | null;
   imageUrl?: string;
+  secondaryImageUrl?: string;
+  tertiaryImageUrl?: string;
   regularPriceAedCents: number;
   salePriceAedCents?: number | null;
   stockQuantity: number;

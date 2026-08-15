@@ -4,7 +4,6 @@ import type { ReactElement } from "react";
 import {
   listCatalogCategories,
   listCatalogProducts,
-  listCatalogVariants,
 } from "@/application/catalog/catalog-service";
 import { restoreSessionUser } from "@/application/auth/auth-service";
 import { AdminOverviewPage } from "@/features/admin/components/admin-overview-page";
@@ -20,10 +19,9 @@ export default async function AdminPage(): Promise<ReactElement> {
     redirect("/admin/login");
   }
 
-  const [products, categories, variants, metrics, activity, recentOrders] = await Promise.all([
+  const [products, categories, metrics, activity, recentOrders] = await Promise.all([
     listCatalogProducts(repository),
     listCatalogCategories(repository),
-    listCatalogVariants(repository),
     repository.getAdminOverviewMetrics(),
     repository.getAdminActivityMetrics(),
     repository.listRecentOrders(5),
@@ -51,7 +49,6 @@ export default async function AdminPage(): Promise<ReactElement> {
         metrics={metrics}
         products={products}
         recentOrders={recentOrders}
-        variants={variants}
       />
     </AdminShell>
   );

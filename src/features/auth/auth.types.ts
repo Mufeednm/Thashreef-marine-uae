@@ -1,5 +1,12 @@
 export interface LoginActionState {
+  values?: {
+    countryCode?: string;
+    email?: string;
+    name?: string;
+    phone?: string;
+  };
   fieldErrors?: {
+    countryCode?: string[];
     email?: string[];
     name?: string[];
     password?: string[];

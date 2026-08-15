@@ -1,10 +1,19 @@
 import { randomUUID } from "node:crypto";
 import type { SessionUser } from "@/domain/auth/user";
-import type { Category, CategoryTreeNode, CreateCategoryInput, UpdateCategoryInput } from "@/domain/catalog/category";
+import type {
+  Category,
+  CategoryTreeNode,
+  CreateCategoryInput,
+  UpdateCategoryInput,
+} from "@/domain/catalog/category";
 import type { CategoryField } from "@/domain/catalog/category-field";
 import type { CreateProductInput, Product } from "@/domain/catalog/product";
 import type { ProductVariant } from "@/domain/catalog/product-variant";
-import type { Brand, DemoStoreRepository, HomepageBanner } from "@/domain/demo-store/demo-store-repository";
+import type {
+  Brand,
+  DemoStoreRepository,
+  HomepageBanner,
+} from "@/domain/demo-store/demo-store-repository";
 import { ensureUniqueSlug, slugify } from "@/shared/utils/slug";
 
 export type CreateProductResult =
@@ -71,59 +80,146 @@ export async function updateProductForAdmin(
   if (!actor || actor.role !== "admin") return { ok: false, reason: "unauthorized" };
   const products = await repository.listProducts();
   if (!products.some((product) => product.id === id)) return { ok: false, reason: "unauthorized" };
-  if (products.some((product) => product.id !== id && product.sku.toLowerCase() === input.sku.toLowerCase())) return { ok: false, reason: "duplicate-sku" };
+  if (
+    products.some(
+      (product) => product.id !== id && product.sku.toLowerCase() === input.sku.toLowerCase(),
+    )
+  )
+    return { ok: false, reason: "duplicate-sku" };
   const categories = await repository.listCategories();
-  if (!categories.find((category) => category.id === input.categoryId)?.parentCategoryId) return { ok: false, reason: "invalid-category" };
-  if (!(await repository.listBrands()).some((brand) => brand.name === input.brand)) return { ok: false, reason: "invalid-brand" };
+  if (!categories.find((category) => category.id === input.categoryId)?.parentCategoryId)
+    return { ok: false, reason: "invalid-category" };
+  if (!(await repository.listBrands()).some((brand) => brand.name === input.brand))
+    return { ok: false, reason: "invalid-brand" };
   const product = await repository.updateProduct(id, input);
   return product ? { ok: true, product } : { ok: false, reason: "invalid-category" };
 }
 
-export async function deleteProductForAdmin(repository: DemoStoreRepository, actor: SessionUser | null, id: string): Promise<AdminMutationResult> {
+export async function deleteProductForAdmin(
+  repository: DemoStoreRepository,
+  actor: SessionUser | null,
+  id: string,
+): Promise<AdminMutationResult> {
   if (!actor || actor.role !== "admin") return { ok: false, reason: "unauthorized" };
   await repository.deleteProduct(id);
   return { ok: true };
 }
 
 export async function createBrandForAdmin(
-  repository: DemoStoreRepository, actor: SessionUser | null, input: Omit<Brand, "id" | "slug">,
+  repository: DemoStoreRepository,
+  actor: SessionUser | null,
+  input: Omit<Brand, "id" | "slug">,
 ): Promise<AdminMutationResult> {
   if (!actor || actor.role !== "admin") return { ok: false, reason: "unauthorized" };
   const brands = await repository.listBrands();
-  if (brands.some((brand) => brand.name.toLowerCase() === input.name.trim().toLowerCase())) return { ok: false, reason: "duplicate" };
-  await repository.addBrand({ ...input, slug: ensureUniqueSlug(slugify(input.name), brands.map((brand) => brand.slug)) });
+  if (brands.some((brand) => brand.name.toLowerCase() === input.name.trim().toLowerCase()))
+    return { ok: false, reason: "duplicate" };
+  await repository.addBrand({
+    ...input,
+    slug: ensureUniqueSlug(
+      slugify(input.name),
+      brands.map((brand) => brand.slug),
+    ),
+  });
   return { ok: true };
 }
 
 export async function updateBrandForAdmin(
-  repository: DemoStoreRepository, actor: SessionUser | null, id: number, input: Omit<Brand, "id" | "slug">,
+  repository: DemoStoreRepository,
+  actor: SessionUser | null,
+  id: number,
+  input: Omit<Brand, "id" | "slug">,
 ): Promise<AdminMutationResult> {
   if (!actor || actor.role !== "admin") return { ok: false, reason: "unauthorized" };
   const brands = await repository.listBrands();
-  if (brands.some((brand) => brand.id !== id && brand.name.toLowerCase() === input.name.trim().toLowerCase())) return { ok: false, reason: "duplicate" };
-  return (await repository.updateBrand(id, input)) ? { ok: true } : { ok: false, reason: "missing" };
+  if (
+    brands.some(
+      (brand) => brand.id !== id && brand.name.toLowerCase() === input.name.trim().toLowerCase(),
+    )
+  )
+    return { ok: false, reason: "duplicate" };
+  return (await repository.updateBrand(id, input))
+    ? { ok: true }
+    : { ok: false, reason: "missing" };
 }
 
-export async function deleteBrandForAdmin(repository: DemoStoreRepository, actor: SessionUser | null, id: number): Promise<AdminMutationResult> {
+export async function deleteBrandForAdmin(
+  repository: DemoStoreRepository,
+  actor: SessionUser | null,
+  id: number,
+): Promise<AdminMutationResult> {
   if (!actor || actor.role !== "admin") return { ok: false, reason: "unauthorized" };
-  const [brands, products] = await Promise.all([repository.listBrands(), repository.listProducts()]);
-  if (products.some((product) => product.brand === brands.find((brand) => brand.id === id)?.name)) return { ok: false, reason: "in-use" };
+  const [brands, products] = await Promise.all([
+    repository.listBrands(),
+    repository.listProducts(),
+  ]);
+  if (products.some((product) => product.brand === brands.find((brand) => brand.id === id)?.name))
+    return { ok: false, reason: "in-use" };
   await repository.deleteBrand(id);
   return { ok: true };
 }
 
-export async function updateCategoryForAdmin(repository: DemoStoreRepository, actor: SessionUser | null, id: number, input: UpdateCategoryInput): Promise<AdminMutationResult> {
+export async function updateCategoryForAdmin(
+  repository: DemoStoreRepository,
+  actor: SessionUser | null,
+  id: number,
+  input: UpdateCategoryInput,
+): Promise<AdminMutationResult> {
   if (!actor || actor.role !== "admin") return { ok: false, reason: "unauthorized" };
   if (input.parentCategoryId === id) return { ok: false, reason: "self-parent" };
   const categories = await repository.listCategories();
-  if (categories.some((category) => category.id !== id && category.name.toLowerCase() === input.name.trim().toLowerCase())) return { ok: false, reason: "duplicate" };
-  return (await repository.updateCategory(id, input)) ? { ok: true } : { ok: false, reason: "missing" };
+  const parentCategoryId = input.parentCategoryId;
+  if (
+    typeof parentCategoryId === "number" &&
+    createsCategoryCycle(categories, id, parentCategoryId)
+  ) {
+    return { ok: false, reason: "invalid-parent" };
+  }
+  if (
+    categories.some(
+      (category) =>
+        category.id !== id && category.name.toLowerCase() === input.name.trim().toLowerCase(),
+    )
+  )
+    return { ok: false, reason: "duplicate" };
+  return (await repository.updateCategory(id, input))
+    ? { ok: true }
+    : { ok: false, reason: "missing" };
 }
 
-export async function deleteCategoryForAdmin(repository: DemoStoreRepository, actor: SessionUser | null, id: number): Promise<AdminMutationResult> {
+function createsCategoryCycle(
+  categories: Category[],
+  categoryId: number,
+  parentCategoryId: number,
+): boolean {
+  const categoriesById = new Map(categories.map((category) => [category.id, category]));
+  const visited = new Set<number>();
+  let currentParentId: number | null = parentCategoryId;
+
+  while (currentParentId !== null) {
+    if (currentParentId === categoryId || visited.has(currentParentId)) return true;
+    visited.add(currentParentId);
+    currentParentId = categoriesById.get(currentParentId)?.parentCategoryId ?? null;
+  }
+
+  return false;
+}
+
+export async function deleteCategoryForAdmin(
+  repository: DemoStoreRepository,
+  actor: SessionUser | null,
+  id: number,
+): Promise<AdminMutationResult> {
   if (!actor || actor.role !== "admin") return { ok: false, reason: "unauthorized" };
-  const [categories, products] = await Promise.all([repository.listCategories(), repository.listProducts()]);
-  if (categories.some((category) => category.parentCategoryId === id) || products.some((product) => product.categoryId === id)) return { ok: false, reason: "in-use" };
+  const [categories, products] = await Promise.all([
+    repository.listCategories(),
+    repository.listProducts(),
+  ]);
+  if (
+    categories.some((category) => category.parentCategoryId === id) ||
+    products.some((product) => product.categoryId === id)
+  )
+    return { ok: false, reason: "in-use" };
   await repository.deleteCategory(id);
   return { ok: true };
 }
@@ -203,7 +299,9 @@ export async function listCatalogBrands(repository: DemoStoreRepository): Promis
   return repository.listBrands();
 }
 
-export async function listHomepageBanners(repository: DemoStoreRepository): Promise<HomepageBanner[]> {
+export async function listHomepageBanners(
+  repository: DemoStoreRepository,
+): Promise<HomepageBanner[]> {
   return repository.listHomepageBanners();
 }
 
@@ -237,7 +335,10 @@ function buildCategoryTree(categories: Category[]): CategoryTreeNode[] {
   }
 
   function sortAndSetDepth(items: CategoryTreeNode[], depth: number): void {
-    items.sort((left, right) => left.displayOrder - right.displayOrder || left.name.localeCompare(right.name));
+    items.sort(
+      (left, right) =>
+        left.displayOrder - right.displayOrder || left.name.localeCompare(right.name),
+    );
 
     for (const item of items) {
       item.depth = depth;

@@ -1,5 +1,161 @@
 # Decision Log
 
+## 2026-08-16 - Email-first customer access and reliable order notifications
+
+- **Decision:** Accept email and password only for sign-in, reject category parent assignments that create a hierarchy cycle, and send confirmation email immediately after each saved order when complete SMTP settings are configured.
+- **Reason:** Email is the customer's durable account identity, category loops can make navigation recursive, and order updates must be deliverable through a real mail server rather than only shown in the browser.
+- **Impact:** Login validation is email based; category edits reject self, descendant, and already-corrupt parent chains; orders remain saved if mail delivery fails and the checkout response accurately indicates whether a confirmation was sent.
+
+## 2026-08-16 - Hidden catalogue ordering controls
+
+- **Decision:** Remove Display Order from all administrator brand and category interfaces, and retain its existing database value only as an internal stable-sort fallback.
+- **Reason:** Manual numeric ordering is not needed in the requested administration workflow.
+- **Impact:** New brands and categories receive the default internal order, while edits retain their existing order and storefront navigation remains deterministic.
+
+## 2026-08-16 - Prominent customer-facing brand imagery
+
+- **Decision:** Use larger image-first brand cards in the storefront rail and render the same image in the public brand catalogue header. Keep display order internal to administration.
+- **Reason:** Brand images must be recognisable to shoppers and consistently carried into the brand-specific page. Display order is a sorting control, not customer information.
+- **Impact:** Customers see the uploaded image before selecting a brand and again while browsing that brand's products. Administrators can still control the sequence without exposing the numeric setting publicly.
+
+## 2026-08-16 - Image-first brand identity
+
+- **Decision:** Remove the editable logo-label field from brand administration and require an uploaded image for new brands and legacy brands that do not already have one.
+- **Reason:** A brand image is the sole presentation asset requested for brands; a separate text label creates duplicate and inconsistent identity data.
+- **Impact:** The system internally derives the legacy label from the brand name for database compatibility, while administrators only manage the name and image.
+
+## 2026-08-16 - Private seeded administrator sign-in
+
+- **Decision:** Retain the existing seeded administrator account as the local bootstrap account, but never display its credentials. Present the normal sign-in form as Username and Password, and route authenticated administrators to `/admin`.
+- **Reason:** The administrator should not need to create a separate account, while visible credential hints are insecure and unprofessional.
+- **Impact:** The administrator remains available after a fresh database initialization and is still stored as a secure salted hash. Customer registration continues to use email separately.
+
+## 2026-08-16 - Print-ready parcel labels
+
+- **Decision:** Replace the administrator's PDF-download action with an authenticated, print-focused parcel-label page sized at 100 × 150 mm.
+- **Reason:** Delivery parcels need a direct label containing the recipient, address, ordered products, and date rather than a general order document.
+- **Impact:** The order table and detail dialog now open a separate label tab that invokes the browser print dialog, while retaining a visible manual print control if automatic printing is blocked.
+
+## 2026-08-15 - VAT-free order requests and clear confirmation
+
+- **Decision:** Exclude VAT from checkout and saved order totals, retaining only the product subtotal and UAE delivery fee. Present a dedicated confirmation state that explains the availability review and forthcoming email confirmation.
+- **Reason:** The customer requested the displayed and recorded order amount to exclude VAT, while a request order needs clear expectations before payment or dispatch.
+- **Impact:** The checkout total and the administrator's saved total now match without VAT. Customers see the exact email address that will receive confirmation after availability is checked.
+
+## 2026-08-15 - Unique customer contact records
+
+- **Decision:** Use the complete normalized international phone value as a unique customer identifier alongside email, and enforce it in both registration checks and MySQL.
+- **Reason:** The same country code and local mobile number must not create more than one account, including under concurrent registration attempts.
+- **Impact:** Registration gives a direct mobile-number error before saving. The unique database index remains the final guard even if two requests arrive at the same time.
+
+## 2026-08-15 - Single local administrator account
+
+- **Decision:** Remove the visible demo-account credentials and eliminate local staff/customer demo accounts, retaining only the requested administrator account. Send an administrator to the protected admin workspace after a successful normal sign-in.
+- **Reason:** Credentials must never appear in the user interface, and the local environment should begin with one clear administrator account rather than test users.
+- **Impact:** The verified local database now contains only the `admin` account with a salted password hash. The corresponding password remains user-supplied rather than being rendered in the application.
+
+## 2026-08-15 - Durable and hashed customer registration
+
+- **Decision:** Store every password exclusively as a salted scrypt hash. Create the user account and customer profile in one database transaction, and migrate seeded local accounts to the same format on initialization.
+- **Reason:** An account must not be partially recorded, and password verification must never accept plaintext values.
+- **Impact:** A successful customer registration creates both database records together. Duplicate email conflicts roll back cleanly, login only verifies secure hashes, and the administrator customer list is revalidated after registration.
+
+## 2026-08-15 - Product gallery upload request size
+
+- **Decision:** Configure the Next.js Server Action request body limit at 16 MB.
+- **Reason:** The default 1 MB limit rejects the combined multipart request for a valid three-image product gallery, which appears to the browser as a failed fetch.
+- **Impact:** The administrator can submit up to three 5 MB images in a single create or edit request. Individual image validation remains limited to JPG, PNG, or WebP at 5 MB each.
+
+## 2026-08-15 - Server-action form handling and gallery visibility
+
+- **Decision:** Let React supply the multipart settings for server-action forms, remove the introductory product-setup panel, and show a photo count on customer product cards when a product has a gallery.
+- **Reason:** React 19 warns when a form with a function action also declares `encType`; the extra introduction was not useful during product creation; customers need a clear cue that more product images are available.
+- **Impact:** Product, brand, and category image uploads no longer log the form console error. Product creation opens directly on the fields, while customer cards signal the available gallery images and the product detail page provides the image selector.
+
+## 2026-08-15 - Standardised catalogue management
+
+- **Decision:** Remove the unused Variants metric and column from the administrator experience. Use the same table action pattern for every catalogue record: view details in an in-page modal, edit, or delete.
+- **Reason:** Variants do not belong to the current catalogue workflow, and opening storefront pages from an admin table interrupts record management.
+- **Impact:** The overview now reports orders instead of variants. Product, brand, and category inspection remains inside the admin workspace with consistent, touch-friendly action controls.
+
+## 2026-08-15 - Richer catalogue and fulfilment records
+
+- **Decision:** Store up to three administrator-uploaded product images and make the customer product page browse them. Save the complete checkout delivery address on every new order, then provide its customer, address, items, and a PDF export in the admin order view.
+- **Reason:** One image was insufficient for product assessment, while fulfilment staff need the full order record in one accessible place.
+- **Impact:** Administrators can preview every selected gallery image before saving. New orders retain their delivery address and line items for display and a protected, downloadable PDF.
+
+## 2026-08-15 - Clear category navigation and resilient account registration
+
+- **Decision:** Position every desktop category flyout relative to its own trigger. Collect the selected international dialing code separately from the local mobile number, and keep registration values in the form after server-side validation fails.
+- **Reason:** A shared menu position made subcategories appear disconnected from the item being explored, while account creation required customers to re-enter valid details after correcting one field.
+- **Impact:** Category options open directly beneath the active navigation item. Registration validates each field with clear inline feedback, supports the UAE and regional dialing codes, and submits a single normalized phone number to the server.
+
+## 2026-08-15 - Premium Dubai marina hero
+
+- **Decision:** Use a locally stored, photorealistic Dubai marina image for the primary hero slide and refine the overlay, typography, and spotlight card.
+- **Reason:** The previous generic photo and large decorative treatment did not communicate the brand's marine-supply focus clearly enough.
+- **Impact:** The hero now has reserved copy space, visible marine equipment, stronger contrast, and an Accessory spotlight that remains readable at smaller sizes.
+
+## 2026-08-15 - Consistent hero carousel imagery
+
+- **Decision:** Use three locally stored, photorealistic Dubai marine scenes for the homepage carousel and ignore additional legacy banner image artwork.
+- **Reason:** The rotating legacy graphics broke the premium visual consistency of the redesigned hero.
+- **Impact:** Every carousel state uses the same visual language while existing banner titles, descriptions, and call-to-action text continue to work.
+
+## 2026-08-15 - Live new-product spotlight
+
+- **Decision:** Replace decorative spotlight images in the hero with the latest catalogue products, their prices, and direct shopping actions.
+- **Reason:** The hero secondary panel should help customers shop instead of repeating generic marine imagery.
+- **Impact:** Newly added products receive a useful, data-driven storefront placement without additional administrator work.
+
+## 2026-08-15 - Clear contact affordance
+
+- **Decision:** Remove the desktop Quick quote header link and retain one visible WhatsApp icon button in the lower-left corner.
+- **Reason:** A single labelled contact affordance is clearer and avoids duplicating the same external action in the header.
+- **Impact:** The header has more room for search and account controls while WhatsApp remains readily accessible with a 56 px touch target.
+
+## 2026-08-15 - Uncluttered local storefront preview
+
+- **Decision:** Disable the Next.js development route indicator in the application configuration.
+- **Reason:** Its lower-left badge overlaps the storefront's intended WhatsApp contact control during local review.
+- **Impact:** Development errors remain visible, while the page preview accurately reflects the production contact layout.
+
+## 2026-08-15 - Product-led storefront content order
+
+- **Decision:** Keep the hero's Accessory spotlight with three photorealistic marine-item images, position the brand rail before Shop by Category, and remove the bulk-order promotion block.
+- **Reason:** The storefront should lead with relevant products and brand discovery without an extra sales message competing for attention.
+- **Impact:** Customers encounter marine safety, anchoring, and pump imagery in the hero, then can browse brands before categories.
+
+## 2026-08-15 - Simplified storefront promotions
+
+- **Decision:** Remove the Safety bundle and Mooring essentials promotional cards from the homepage.
+- **Reason:** These duplicate categories already available through the primary browsing paths.
+- **Impact:** The product carousel follows the category discovery content without redundant promotional detours.
+
+## 2026-08-15 - Direct catalogue browsing
+
+- **Decision:** Remove the Latest projects gallery, rail scrolling hints, and visible Featured badges from customer product views.
+- **Reason:** They add repeated visual messages without helping customers find or assess products.
+- **Impact:** Product browsing is less cluttered; the internal featured flag can still support administration without being shown to customers.
+
+## 2026-08-15 - Simplified hero carousel panel
+
+- **Decision:** Remove the homepage hero's catalog CTA and numeric product, rail, and dispatch counters, replacing the panel with three relevant marine-item images.
+- **Reason:** The carousel should remain product-focused without redundant operational counters.
+- **Impact:** The hero continues to support its primary category action while presenting safety, anchoring, and pump imagery.
+
+## 2026-08-15 - Table-first catalog administration
+
+- **Decision:** Present products, brands, and categories as management tables, with creation and editing performed in focused modal forms. Hide SKU from all user-facing workflows and generate it internally.
+- **Reason:** Administrators requested a faster, more familiar catalogue workflow without maintaining technical product references.
+- **Impact:** Actions retain accessible labels and 44 px touch targets; the database SKU remains unique without being an administrator input.
+
+## 2026-08-15 - Admin-managed catalog imagery and UAE delivery rule
+
+- **Decision:** Require uploads for new products, categories, and brands; allow an administrator to replace existing imagery. Store files under the server's public uploads directory and persist their paths in MySQL.
+- **Reason:** The catalogue needs administrator-owned imagery instead of manual path entry.
+- **Impact:** Supported images are JPG, PNG, and WebP up to 5 MB. The checkout and its API calculate AED 20 delivery below AED 700 and free UAE delivery from AED 700.
+
 ## 2026-08-15 - Use MySQL for Hostinger production deployments
 
 - **Decision:** Replace the SQLite runtime with MySQL through Sequelize.

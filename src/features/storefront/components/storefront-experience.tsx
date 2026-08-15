@@ -49,6 +49,12 @@ interface BrandTile {
   tone: string;
 }
 
+const heroBannerImages = [
+  "/hero-items/dubai-marina-hero-v2.png",
+  "/hero-items/dubai-safety-hero-v2.png",
+  "/hero-items/dubai-maintenance-hero-v2.png",
+] as const;
+
 const heroSlides: HeroSlide[] = [
   {
     accent: "Safety kits, PFDs and rescue-ready essentials",
@@ -56,9 +62,8 @@ const heroSlides: HeroSlide[] = [
     description:
       "Life jackets, lifebuoys, visibility gear and emergency accessories for crews, workshops and family boating.",
     eyebrow: "Marine safety equipment",
-    imageAlt: "Orange marine safety life jacket and rescue equipment",
-    imageUrl:
-      "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=2200&q=86",
+    imageAlt: "White leisure boat with marine rope and safety equipment at Dubai marina",
+    imageUrl: "/hero-items/dubai-marina-hero-v2.png",
     matcher: "life",
     title: "Accessory-first marine supply for safer days on water.",
   },
@@ -169,12 +174,6 @@ const categoryTiles: CategoryTile[] = [
   },
 ];
 
-const demoAccounts = [
-  { label: "Admin", password: "admin123", username: "admin" },
-  { label: "Staff", password: "Staff@123", username: "staff" },
-  { label: "Customer", password: "userpassword", username: "user" },
-] as const;
-
 const brandTiles: BrandTile[] = [
   { label: "Lalizas", tone: "from-orange-500 to-amber-500" },
   { label: "Polyform", tone: "from-sky-600 to-cyan-500" },
@@ -203,13 +202,13 @@ export function StorefrontExperience({
   const slides = useMemo<HeroSlide[]>(
     () =>
       banners.length > 0
-        ? banners.map((banner) => ({
+        ? banners.slice(0, heroBannerImages.length).map((banner, index) => ({
             accent: "UAE marine supply, delivered with confidence",
             cta: banner.buttonText,
             description: banner.subtitle,
             eyebrow: "Marsa Edge Marine LLC",
             imageAlt: banner.title,
-            imageUrl: banner.imageUrl,
+            imageUrl: heroBannerImages[index],
             matcher: "all",
             title: banner.title,
           }))
@@ -255,16 +254,11 @@ export function StorefrontExperience({
         (!selectedCategoryIds || selectedCategoryIds.has(product.categoryId)) &&
         (!normalizedQuery ||
           product.name.toLowerCase().includes(normalizedQuery) ||
-          product.sku.toLowerCase().includes(normalizedQuery) ||
           product.brand.toLowerCase().includes(normalizedQuery) ||
           product.category.toLowerCase().includes(normalizedQuery) ||
           product.mainCategory?.toLowerCase().includes(normalizedQuery)),
     );
   }, [products, query, selectedCategoryIds]);
-  const featuredProducts = useMemo(
-    () => products.filter((product) => product.isFeatured).slice(0, 10),
-    [products],
-  );
   const homepageCategories = useMemo(
     () => flatCategories.filter((category) => category.showOnHomepage).sort((a, b) => a.homepageOrder - b.homepageOrder),
     [flatCategories],
@@ -287,11 +281,7 @@ export function StorefrontExperience({
   const recommendedProducts = useMemo(
     () =>
       [...products]
-        .sort(
-          (left, right) =>
-            Number(right.isFeatured) - Number(left.isFeatured) ||
-            right.priceAedCents - left.priceAedCents,
-        )
+        .sort((left, right) => right.priceAedCents - left.priceAedCents)
         .slice(0, 10),
     [products],
   );
@@ -406,8 +396,9 @@ export function StorefrontExperience({
       <main>
         <section className="mx-auto max-w-[1480px] px-4 py-5 sm:px-6">
           <HeroShowcase
+            addToCart={addToCart}
             activeSlide={activeSlide}
-            products={products}
+            products={recentlyAdded.length > 0 ? recentlyAdded : products}
             selectDepartment={selectDepartment}
             setActiveSlide={setActiveSlide}
             slide={slide}
@@ -415,7 +406,7 @@ export function StorefrontExperience({
           />
         </section>
 
-        <TrustStrip />
+        <BrandLogoCarousel brands={brands} />
 
         <CategoryCarousel selectDepartment={selectDepartment} />
 
@@ -425,7 +416,7 @@ export function StorefrontExperience({
           return categoryProducts.length ? (
             <ProductCarousel
               addToCart={addToCart}
-              eyebrow="Featured category"
+              eyebrow="Shop category"
               key={category.id}
               products={categoryProducts}
               subtitle={`Selected marine equipment from ${category.name}.`}
@@ -434,22 +425,12 @@ export function StorefrontExperience({
           ) : null;
         })}
 
-        <PromoBanner
-          cta="Build a bulk order"
-          eyebrow="Workshop and trade supply"
-          imageAlt="Marine accessories arranged for maintenance work"
-          imageUrl="/product-images/marine-essential.svg"
-          onClick={() => setLoginOpen(true)}
-          text="Bundle safety gear, pumps, electrical accessories, fenders and cleaning essentials for service teams with a faster quote flow."
-          title="Marine accessories for practical UAE operations."
-        />
-
         <ProductCarousel
           addToCart={addToCart}
           eyebrow="Editor picks"
-          products={featuredProducts.length > 0 ? featuredProducts : products.slice(0, 10)}
+          products={recommendedProducts}
           subtitle="High-utility accessories with strong availability and polished product cards."
-          title="Featured Products"
+          title="Recommended Products"
         />
         <ProductCarousel
           addToCart={addToCart}
@@ -466,8 +447,6 @@ export function StorefrontExperience({
           title="New Arrivals"
         />
 
-        <BrandLogoCarousel brands={brands} />
-
         <ProductCarousel
           addToCart={addToCart}
           eyebrow="Trusted labels"
@@ -475,8 +454,6 @@ export function StorefrontExperience({
           subtitle="Product rails grouped around the brands customers already ask for."
           title="Top Brands"
         />
-
-        <PromoSplit selectDepartment={selectDepartment} />
 
         <ProductCarousel
           addToCart={addToCart}
@@ -505,7 +482,7 @@ export function StorefrontExperience({
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
                   {filteredProducts.length} products available for {selectedCategoryName.toLowerCase()}.
-                  Search by SKU, brand, category or product name.
+                  Search by brand, category or product name.
                 </p>
               </div>
               <div className="flex max-w-4xl flex-wrap gap-2">
@@ -561,19 +538,18 @@ export function StorefrontExperience({
         </section>
 
         <WhyChooseUs />
-        <ProjectGallery />
       </main>
 
       <Footer />
 
       <a
         aria-label="Contact Marsa Edge Marine LLC on WhatsApp"
-        className="fixed bottom-5 left-5 z-20 grid size-12 place-items-center rounded-full bg-[#16a34a] text-xs font-black text-white shadow-xl shadow-emerald-950/20 transition hover:-translate-y-0.5 hover:bg-[#15803d]"
+        className="fixed bottom-5 left-5 z-20 grid size-14 place-items-center rounded-full border-2 border-white bg-[#25d366] text-white shadow-xl shadow-emerald-950/25 transition hover:-translate-y-0.5 hover:bg-[#1ebe57] focus:outline-none focus:ring-4 focus:ring-[#25d366]/35 sm:bottom-6 sm:left-6"
         href="https://wa.me/971500000000"
         rel="noreferrer"
         target="_blank"
       >
-        WA
+        <WhatsAppIcon />
       </a>
       <AnimatePresence>
         {mobileMenuOpen ? (
@@ -669,10 +645,10 @@ function Header({
         >
           <MenuIcon />
         </button>
-        <Link aria-label="Marsa Edge Marine LLC home" className="relative flex h-12 w-28 shrink-0 items-center overflow-hidden rounded-xl bg-white" href="/">
+        <Link aria-label="Marsa Edge Marine LLC home" className="relative flex h-11 w-20 shrink-0 items-center overflow-hidden rounded-xl bg-white sm:h-12 sm:w-28" href="/">
           <Image alt="Marsa Edge Marine LLC" className="absolute -top-8 left-1/2 h-auto w-[184px] max-w-none -translate-x-1/2" height={1728} priority src="/brand/marsa-edge-logo-source.png" unoptimized width={1728} />
         </Link>
-        <label className="relative flex min-h-12 min-w-0 flex-1 items-center rounded-full border border-slate-200 bg-slate-50 px-4 transition focus-within:border-[#0e7490] focus-within:bg-white focus-within:shadow-sm">
+        <label className="relative hidden min-h-12 min-w-0 flex-1 items-center rounded-full border border-slate-200 bg-slate-50 px-4 transition focus-within:border-[#0e7490] focus-within:bg-white focus-within:shadow-sm sm:flex">
           <SearchIcon />
           <span className="sr-only">{t("header.search")}</span>
           <input
@@ -682,14 +658,6 @@ function Header({
             value={query}
           />
         </label>
-        <a
-          className="hidden min-h-11 items-center rounded-full border border-slate-200 px-4 text-xs font-black text-slate-700 transition hover:border-[#0e7490] hover:text-[#0e7490] lg:inline-flex"
-          href="https://wa.me/971500000000"
-          rel="noreferrer"
-          target="_blank"
-        >
-          {t("header.quickQuote")}
-        </a>
         {accountName ? (
           <form action={logoutAction}>
             <button
@@ -723,12 +691,13 @@ function Header({
           ) : null}
         </button>
       </div>
-      <CategoryNavigation categories={categoryTree} selectedCategoryId={selectedCategoryId} selectCategory={selectCategory} />
+      <div className="hidden xl:block"><CategoryNavigation categories={categoryTree} selectedCategoryId={selectedCategoryId} selectCategory={selectCategory} /></div>
     </header>
   );
 }
 
 function HeroShowcase({
+  addToCart,
   activeSlide,
   products,
   selectDepartment,
@@ -736,6 +705,7 @@ function HeroShowcase({
   slide,
   slideCount,
 }: {
+  addToCart: (product: Product) => void;
   activeSlide: number;
   products: Product[];
   selectDepartment: (matcher: string) => void;
@@ -743,10 +713,8 @@ function HeroShowcase({
   slide: HeroSlide;
   slideCount: number;
 }): ReactElement {
-  const productHighlights = products.slice(0, 3);
-
   return (
-    <section className="relative min-h-[620px] overflow-hidden rounded-[2rem] bg-[#071827] text-white shadow-2xl shadow-slate-950/18">
+    <section className="relative min-h-[540px] overflow-hidden rounded-[2rem] bg-[#071827] text-white shadow-2xl shadow-slate-950/18">
       <AnimatePresence mode="wait">
         <motion.div
           animate={{ opacity: 1, scale: 1 }}
@@ -758,7 +726,7 @@ function HeroShowcase({
         >
           <Image
             alt={slide.imageAlt}
-            className="object-cover"
+            className="object-cover object-[68%_center]"
             fill
             priority
             sizes="(min-width: 1280px) 1120px, 100vw"
@@ -766,11 +734,11 @@ function HeroShowcase({
           />
         </motion.div>
       </AnimatePresence>
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,24,39,.96),rgba(7,24,39,.78),rgba(7,24,39,.24))]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(14,116,144,.35),transparent_35%),radial-gradient(circle_at_20%_80%,rgba(249,115,22,.22),transparent_28%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,18,31,.96)_0%,rgba(3,18,31,.84)_40%,rgba(3,18,31,.38)_64%,rgba(3,18,31,.04)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_8%_100%,rgba(235,105,42,.14),transparent_27%),linear-gradient(180deg,rgba(1,12,23,.05),rgba(1,12,23,.35))]" />
 
-      <div className="relative grid min-h-[620px] gap-8 p-6 sm:p-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:p-10">
-        <div className="flex max-w-3xl flex-col justify-center py-12">
+      <div className="relative flex min-h-[540px] flex-col p-6 sm:p-8 lg:p-10">
+        <div className="flex max-w-2xl flex-1 flex-col justify-center py-7 sm:py-10 lg:py-12">
           <motion.p
             animate={{ opacity: 1, y: 0 }}
             className="text-xs font-black tracking-[0.3em] text-cyan-100 uppercase"
@@ -781,7 +749,7 @@ function HeroShowcase({
           </motion.p>
           <motion.h1
             animate={{ opacity: 1, y: 0 }}
-            className="mt-5 max-w-3xl text-4xl font-black leading-[0.98] tracking-tight sm:text-6xl lg:text-7xl"
+            className="mt-5 max-w-xl text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl lg:text-[3.65rem]"
             initial={{ opacity: 0, y: 18 }}
             transition={{ duration: 0.42, delay: 0.08 }}
           >
@@ -789,16 +757,17 @@ function HeroShowcase({
           </motion.h1>
           <motion.p
             animate={{ opacity: 1, y: 0 }}
-            className="mt-6 max-w-2xl text-base leading-8 text-slate-200 sm:text-lg"
+            className="mt-5 max-w-lg text-base leading-7 text-slate-100 sm:text-lg"
             initial={{ opacity: 0, y: 18 }}
             transition={{ duration: 0.42, delay: 0.14 }}
           >
             {slide.description}
           </motion.p>
-          <div className="mt-4 inline-flex w-fit rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold text-cyan-50 backdrop-blur">
+          <div className="mt-5 inline-flex w-fit items-center gap-2 text-xs font-bold text-cyan-50">
+            <span className="size-2 rounded-full bg-[#f97316]" aria-hidden="true" />
             {slide.accent}
           </div>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-7 flex flex-wrap gap-3">
             <button
               className="min-h-12 rounded-full bg-[#f97316] px-6 text-sm font-black text-white shadow-xl shadow-orange-950/20 transition hover:-translate-y-0.5 hover:bg-[#c2410c]"
               onClick={() => selectDepartment(slide.matcher)}
@@ -806,58 +775,42 @@ function HeroShowcase({
             >
               {slide.cta}
             </button>
-            <a
-              className="inline-flex min-h-12 items-center rounded-full border border-white/35 px-6 text-sm font-bold text-white transition hover:bg-white/10"
-              href="#catalog"
-            >
-              Browse Catalog
-            </a>
-          </div>
-          <div className="mt-10 grid max-w-2xl grid-cols-3 gap-3">
-            <HeroMetric label="Products" value={products.length.toString()} />
-            <HeroMetric label="Rails" value="6" />
-            <HeroMetric label="Dispatch" value="UAE" />
           </div>
         </div>
 
-        <div className="hidden flex-col justify-end gap-4 lg:flex">
-          <div className="rounded-[1.75rem] border border-white/15 bg-white/12 p-4 backdrop-blur-xl">
+        <div className="mt-auto w-full max-w-md self-end lg:absolute lg:bottom-10 lg:right-10">
+          <div className="rounded-2xl border border-white/15 bg-[#071827]/90 p-4 shadow-2xl shadow-slate-950/35 backdrop-blur-xl">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-black">Accessory spotlight</p>
-              <span className="rounded-full bg-white/15 px-3 py-1 text-[10px] font-black">
-                LIVE CATALOG
-              </span>
+              <div>
+                <p className="text-sm font-black">New in store</p>
+                <p className="mt-1 text-xs text-slate-300">Latest additions to the marine catalogue.</p>
+              </div>
+              <span className="rounded-full bg-[#f97316] px-3 py-1 text-[10px] font-black">JUST ADDED</span>
             </div>
-            <div className="mt-4 space-y-3">
-              {productHighlights.map((product, index) => (
-                <div className="flex items-center gap-3 rounded-2xl bg-white/10 p-3" key={product.id}>
-                  <div className="relative size-16 shrink-0 overflow-hidden rounded-2xl bg-white">
-                    <Image
-                      alt={product.name}
-                      className="object-contain p-2"
-                      fill
-                      sizes="64px"
-                      src={product.imageUrl}
-                      unoptimized={product.imageUrl.startsWith("/")}
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-black">{product.name}</p>
-                    <p className="mt-1 text-xs text-cyan-50">{formatAedFromCents(product.priceAedCents)}</p>
-                  </div>
-                  <span className="ml-auto grid size-7 place-items-center rounded-full bg-[#f97316] text-xs font-black">
-                    {index + 1}
-                  </span>
-                </div>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              {products.slice(0, 2).map((product) => (
+                <article className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.07]" key={product.id}>
+                  <Link aria-label={`View ${product.name}`} className="block" href={`/products/${product.slug}`}>
+                    <div className="relative aspect-[16/10] bg-white">
+                      <Image alt={product.name} className="object-contain p-2" fill sizes="180px" src={product.imageUrl} unoptimized={product.imageUrl.startsWith("/")} />
+                    </div>
+                    <div className="px-3 pt-2">
+                      <p className="truncate text-xs font-bold text-white">{product.name}</p>
+                      <p className="mt-1 text-xs font-black text-cyan-100">{formatAedFromCents(product.priceAedCents)}</p>
+                    </div>
+                  </Link>
+                  <button className="m-3 mt-2 min-h-11 w-[calc(100%-1.5rem)] rounded-lg border border-white/15 bg-white/10 px-2 text-xs font-bold text-white transition hover:bg-[#f97316]" onClick={() => addToCart(product)} type="button">Add to cart</button>
+                </article>
               ))}
             </div>
           </div>
-          <div className="flex items-center justify-between gap-3 rounded-full bg-white/10 p-2 backdrop-blur">
+        </div>
+          <div className="absolute bottom-6 left-6 hidden items-center gap-2 rounded-full border border-white/10 bg-slate-950/35 p-2 backdrop-blur lg:flex">
             {Array.from({ length: slideCount }, (_, index) => index).map((index) => (
               <button
                 aria-label={`Show slide ${index + 1}`}
                 className={`h-2.5 rounded-full transition-all ${
-                  activeSlide === index ? "w-12 bg-white" : "w-3 bg-white/45 hover:bg-white/75"
+                  activeSlide === index ? "w-9 bg-[#f97316]" : "w-2.5 bg-white/45 hover:bg-white/75"
                 }`}
                 key={index}
                 onClick={() => setActiveSlide(index)}
@@ -865,55 +818,8 @@ function HeroShowcase({
               />
             ))}
           </div>
-        </div>
       </div>
     </section>
-  );
-}
-
-function HeroMetric({ label, value }: { label: string; value: string }): ReactElement {
-  return (
-    <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-      <p className="text-2xl font-black">{value}</p>
-      <p className="mt-1 text-[11px] font-black tracking-[0.18em] text-slate-300 uppercase">
-        {label}
-      </p>
-    </div>
-  );
-}
-
-function TrustStrip(): ReactElement {
-  return (
-    <section className="border-y border-slate-200 bg-white">
-      <div className="mx-auto grid max-w-[1480px] gap-0 px-4 sm:grid-cols-2 lg:grid-cols-4 sm:px-6">
-        <TrustStripItem icon={<TruckIcon />} title="Fast UAE dispatch" text="Local delivery support for marine accessories." />
-        <TrustStripItem icon={<ShieldIcon />} title="Marine grade" text="Safety, power, anchoring, deck and cleaning supplies." />
-        <TrustStripItem icon={<BriefcaseIcon />} title="Trade friendly" text="Built for workshops, crews, retailers and procurement teams." />
-        <TrustStripItem icon={<LockIcon />} title="Secure cart" text="Simple demo cart flow with quick quote paths." />
-      </div>
-    </section>
-  );
-}
-
-function TrustStripItem({
-  icon,
-  text,
-  title,
-}: {
-  icon: ReactElement;
-  text: string;
-  title: string;
-}): ReactElement {
-  return (
-    <article className="flex gap-3 border-b border-slate-100 py-5 sm:border-r sm:px-5 sm:last:border-r-0">
-      <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[#eef8fb] text-[#0e7490]">
-        {icon}
-      </span>
-      <span>
-        <span className="block text-sm font-black text-[#0a2540]">{title}</span>
-        <span className="mt-1 block text-sm leading-6 text-slate-500">{text}</span>
-      </span>
-    </article>
   );
 }
 
@@ -926,7 +832,7 @@ function CategoryCarousel({
     <section className="mx-auto max-w-[1480px] px-4 py-12 sm:px-6">
       <SectionHeader
         eyebrow="Shop by category"
-        subtitle="Accessory-focused departments for fast browsing — no boat-sales clutter, just products customers can buy."
+        subtitle="Browse the essential equipment your crew, boat, or workshop needs."
         title="Find the right marine equipment faster"
       />
       <div className="mt-7 flex snap-x gap-5 overflow-x-auto pb-4 [scrollbar-width:none]">
@@ -1016,11 +922,6 @@ function SectionHeader({
 }): ReactElement {
   const headingColor = tone === "dark" ? "text-white" : "text-[#0a2540]";
   const subtitleColor = tone === "dark" ? "text-slate-300" : "text-slate-600";
-  const chipColor =
-    tone === "dark"
-      ? "border-white/10 bg-white/10 text-cyan-100"
-      : "border-slate-200 bg-white text-slate-500";
-
   return (
     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
@@ -1028,9 +929,6 @@ function SectionHeader({
         <h2 className={`mt-2 text-3xl font-black tracking-tight ${headingColor}`}>{title}</h2>
         <p className={`mt-2 max-w-2xl text-sm leading-6 ${subtitleColor}`}>{subtitle}</p>
       </div>
-      <span className={`hidden rounded-full border px-4 py-2 text-xs font-black sm:inline-flex ${chipColor}`}>
-        Swipe or scroll
-      </span>
     </div>
   );
 }
@@ -1060,6 +958,7 @@ function ProductCard({
   const { locale } = useLocale();
   const name = locale === "ar" && product.nameAr ? product.nameAr : product.name;
   const description = locale === "ar" && product.descriptionAr ? product.descriptionAr : product.description;
+  const galleryCount = [product.imageUrl, product.secondaryImageUrl, product.tertiaryImageUrl].filter(Boolean).length;
   const tones = [
     "from-sky-100 to-blue-50",
     "from-orange-100 to-amber-50",
@@ -1086,9 +985,7 @@ function ProductCard({
         <div className="absolute left-4 top-4 rounded-full bg-[#0a2540] px-3 py-1 text-[10px] font-black text-white shadow-sm">
           {product.category}
         </div>
-        <div className="absolute right-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[10px] font-black text-[#0a2540] shadow-sm">
-          {product.isFeatured ? "Featured" : "Marine"}
-        </div>
+        {galleryCount > 1 ? <div className="absolute bottom-4 right-4 rounded-full bg-white/95 px-3 py-1 text-[10px] font-black text-[#0a2540] shadow-sm">{galleryCount} photos</div> : null}
       </Link>
       <div className="p-4">
         <p className="text-xs font-black tracking-[0.16em] text-slate-400 uppercase">
@@ -1122,153 +1019,27 @@ function ProductCard({
   );
 }
 
-function PromoBanner({
-  cta,
-  eyebrow,
-  imageAlt,
-  imageUrl,
-  onClick,
-  text,
-  title,
-}: {
-  cta: string;
-  eyebrow: string;
-  imageAlt: string;
-  imageUrl: string;
-  onClick: () => void;
-  text: string;
-  title: string;
-}): ReactElement {
-  return (
-    <section className="mx-auto max-w-[1480px] px-4 pb-12 sm:px-6">
-      <div className="grid overflow-hidden rounded-[2rem] bg-[#0a2540] text-white shadow-xl shadow-slate-950/10 lg:grid-cols-[1fr_360px]">
-        <div className="p-7 sm:p-10">
-          <p className="text-xs font-black tracking-[0.24em] text-cyan-100 uppercase">{eyebrow}</p>
-          <h2 className="mt-3 max-w-3xl text-3xl font-black tracking-tight sm:text-4xl">
-            {title}
-          </h2>
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300">{text}</p>
-          <button
-            className="mt-7 min-h-12 rounded-full bg-white px-6 text-sm font-black text-[#0a2540] transition hover:-translate-y-0.5 hover:bg-cyan-50"
-            onClick={onClick}
-            type="button"
-          >
-            {cta}
-          </button>
-        </div>
-        <div className="relative min-h-72 bg-gradient-to-br from-cyan-100 to-orange-100">
-          <Image
-            alt={imageAlt}
-            className="object-contain p-10"
-            fill
-            sizes="(min-width: 1024px) 360px, 100vw"
-            src={imageUrl}
-            unoptimized={imageUrl.startsWith("/")}
-          />
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function BrandLogoCarousel({ brands }: { brands: Brand[] }): ReactElement {
   const { locale } = useLocale();
   return (
     <section className="mx-auto max-w-[1480px] px-4 pb-12 sm:px-6">
       <SectionHeader
         eyebrow="Shop by brand"
-        subtitle="A premium logo rail gives shoppers a faster path to familiar marine accessory brands."
+        subtitle="Shop trusted marine brands and find the right equipment faster."
         title="Supplier and brand partners"
       />
       <div className="mt-7 flex snap-x gap-4 overflow-x-auto pb-4 [scrollbar-width:none]">
         {brands.slice(0, 12).map((brand, index) => (
           <Link
             aria-label={`Shop ${locale === "ar" && brand.nameAr ? brand.nameAr : brand.name} products`}
-            className="flex h-28 w-52 shrink-0 snap-start items-center justify-center rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-cyan-300 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#0e568f]"
+            className="flex h-36 w-56 shrink-0 snap-start flex-col items-center justify-center rounded-[1.5rem] border border-slate-200 bg-white p-4 text-center shadow-sm transition hover:-translate-y-1 hover:border-cyan-300 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#0e568f]"
             href={`/brands/${brand.slug}`}
             key={brand.id}
           >
-            <span
-              className={`grid size-12 place-items-center rounded-2xl bg-gradient-to-br ${
-                brandTiles[index % brandTiles.length].tone
-              } text-sm font-black text-white`}
-            >
-              {brand.logoText.slice(0, 2).toUpperCase()}
-            </span>
-            <span className="ml-3 text-sm font-black text-[#0a2540]">{locale === "ar" && brand.nameAr ? brand.nameAr : brand.name}</span>
+            {brand.imageUrl ? <span className="relative grid h-20 w-40 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-white"><Image alt={`${brand.name} logo`} className="object-contain p-2" fill sizes="160px" src={brand.imageUrl} unoptimized={brand.imageUrl.startsWith("/")} /></span> : <span className={`grid h-20 w-40 place-items-center rounded-xl bg-gradient-to-br ${brandTiles[index % brandTiles.length].tone} text-base font-black text-white`}>{brand.name.slice(0, 2).toUpperCase()}</span>}
+            <span className="mt-2 text-sm font-black text-[#0a2540]">{locale === "ar" && brand.nameAr ? brand.nameAr : brand.name}</span>
           </Link>
         ))}
-      </div>
-    </section>
-  );
-}
-
-function PromoSplit({
-  selectDepartment,
-}: {
-  selectDepartment: (matcher: string) => void;
-}): ReactElement {
-  return (
-    <section className="mx-auto grid max-w-[1480px] gap-5 px-4 pb-12 sm:px-6 lg:grid-cols-2">
-      <div className="overflow-hidden rounded-[2rem] bg-white shadow-lg shadow-slate-950/6">
-        <div className="relative min-h-56 bg-[#e8f7fb]">
-          <Image
-            alt="Life jacket marine safety accessory"
-            className="object-contain p-10"
-            fill
-            sizes="(min-width: 1024px) 50vw, 100vw"
-            src="/product-images/life-jacket.svg"
-            unoptimized
-          />
-        </div>
-        <div className="p-7">
-          <p className="text-xs font-black tracking-[0.22em] text-[#f97316] uppercase">
-            Safety bundle
-          </p>
-          <h2 className="mt-2 text-2xl font-black text-[#0a2540]">
-            Build a crew-ready safety kit
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Combine life jackets, rings, lights and rescue accessories in one focused shopping path.
-          </p>
-          <button
-            className="mt-5 min-h-11 rounded-full bg-[#0a2540] px-5 text-sm font-black text-white"
-            onClick={() => selectDepartment("life")}
-            type="button"
-          >
-            Shop safety
-          </button>
-        </div>
-      </div>
-      <div className="overflow-hidden rounded-[2rem] bg-white shadow-lg shadow-slate-950/6">
-        <div className="relative min-h-56 bg-[#fff3e6]">
-          <Image
-            alt="Marine anchor accessory"
-            className="object-contain p-10"
-            fill
-            sizes="(min-width: 1024px) 50vw, 100vw"
-            src="/product-images/anchor.svg"
-            unoptimized
-          />
-        </div>
-        <div className="p-7">
-          <p className="text-xs font-black tracking-[0.22em] text-[#f97316] uppercase">
-            Mooring essentials
-          </p>
-          <h2 className="mt-2 text-2xl font-black text-[#0a2540]">
-            Anchors, ropes, fenders and hardware
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Make docking and day-to-day protection easy with a stronger accessory-led category path.
-          </p>
-          <button
-            className="mt-5 min-h-11 rounded-full bg-[#0a2540] px-5 text-sm font-black text-white"
-            onClick={() => selectDepartment("anchor")}
-            type="button"
-          >
-            Shop anchoring
-          </button>
-        </div>
       </div>
     </section>
   );
@@ -1316,66 +1087,6 @@ function WhyChooseUs(): ReactElement {
             </span>
             <h3 className="mt-5 text-lg font-black text-[#0a2540]">{item.title}</h3>
             <p className="mt-2 text-sm leading-6 text-slate-600">{item.text}</p>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function ProjectGallery(): ReactElement {
-  const gallery = [
-    {
-      alt: "Marine battery and electrical accessory",
-      image: "/product-images/battery.svg",
-      title: "Electrical readiness",
-    },
-    {
-      alt: "Marine pump accessory",
-      image: "/product-images/pump.svg",
-      title: "Pump and bilge care",
-    },
-    {
-      alt: "Marine cleaning accessory",
-      image: "/product-images/cleaning.svg",
-      title: "Maintenance essentials",
-    },
-    {
-      alt: "Marine fender accessory",
-      image: "/product-images/fender.svg",
-      title: "Docking protection",
-    },
-  ];
-
-  return (
-    <section className="mx-auto max-w-[1480px] px-4 py-12 sm:px-6">
-      <SectionHeader
-        eyebrow="Latest projects"
-        subtitle="A visual gallery keeps the page active and reinforces the accessories-first direction."
-        title="Accessory setups and service essentials"
-      />
-      <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {gallery.map((item) => (
-          <article
-            className="group overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm"
-            key={item.title}
-          >
-            <div className="relative aspect-square bg-gradient-to-br from-cyan-50 to-orange-50">
-              <Image
-                alt={item.alt}
-                className="object-contain p-10 transition duration-300 group-hover:scale-105"
-                fill
-                sizes="(min-width: 1024px) 25vw, 50vw"
-                src={item.image}
-                unoptimized
-              />
-            </div>
-            <div className="p-5">
-              <p className="text-sm font-black text-[#0a2540]">{item.title}</p>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
-                Practical product group for everyday marine operations.
-              </p>
-            </div>
           </article>
         ))}
       </div>
@@ -1532,7 +1243,6 @@ export function ProductDetail({
             >
               <CloseIcon />
             </button>
-            <p className="text-xs font-bold text-slate-500">SKU {product.sku}</p>
             <h2 className="mt-3 pr-10 text-2xl font-black leading-8 text-[#0a2540]">
               {product.name}
             </h2>
@@ -1595,26 +1305,6 @@ function LoginModal({ close }: { close: () => void }): ReactElement {
           <CloseIcon />
         </button>
         <LoginForm />
-        <section className="mt-3 rounded-2xl bg-white p-4 shadow-lg shadow-slate-950/10">
-          <p className="text-xs font-bold tracking-[0.2em] text-slate-500 uppercase">
-            Demo accounts
-          </p>
-          <div className="mt-3 grid gap-2">
-            {demoAccounts.map((account) => (
-              <div
-                className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-sm"
-                key={account.username}
-              >
-                <span className="font-bold text-slate-800">
-                  {account.label}: {account.username}
-                </span>
-                <code className="rounded bg-white px-2 py-1 text-xs text-slate-600">
-                  {account.password}
-                </code>
-              </div>
-            ))}
-          </div>
-        </section>
       </motion.div>
     </motion.div>
   );
@@ -1763,12 +1453,13 @@ function Footer(): ReactElement {
           </div>
         </div>
         <FooterLinks heading="Shop" links={["Safety Gear", "Anchoring", "Electrical", "Cleaning"]} />
-        <FooterLinks heading="Support" links={["Contact", "Quick Quote", "Shipping", "Returns"]} />
+        <div><p className="text-sm font-extrabold text-white">Support</p><ul className="mt-3 space-y-2 text-sm"><li><a className="hover:text-white" href="#catalog">Contact</a></li><li><a className="hover:text-white" href="#catalog">Quick Quote</a></li><li><a className="hover:text-white" href="#catalog">Shipping</a></li><li><Link className="hover:text-white" href="/return-refund">Return &amp; Refund</Link></li></ul></div>
         <div>
           <p className="text-sm font-extrabold text-white">Service desk</p>
-          <p className="mt-3 text-sm">Mon-Sat | 8am-6pm</p>
-          <p className="mt-1 text-sm">+971 50 000 0000</p>
-          <p className="mt-1 text-sm">sales@marsaedgemarine.com</p>
+          <p className="mt-3 text-sm font-semibold text-white">Marsa Edge Marine</p>
+          <p className="mt-1 text-sm">Dubai</p>
+          <p className="mt-1 text-sm">Al Jaddaf</p>
+          <p className="mt-1 text-sm">Drydocks</p>
         </div>
       </div>
     </footer>
@@ -1901,6 +1592,14 @@ function LockIcon(): ReactElement {
     <svg aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
       <rect x="5" y="10" width="14" height="10" rx="2" />
       <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
+
+function WhatsAppIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" className="size-7" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12 2a9.86 9.86 0 0 0-8.48 14.9L2.2 21.8l5.05-1.3A10 10 0 1 0 12 2Zm0 17.95a7.95 7.95 0 0 1-4.05-1.1l-.3-.18-3 .77.8-2.91-.2-.3A7.99 7.99 0 1 1 12 19.95Zm4.36-5.97c-.24-.12-1.43-.7-1.65-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06a6.5 6.5 0 0 1-1.91-1.18 7.19 7.19 0 0 1-1.33-1.65c-.14-.24-.02-.37.1-.49.11-.1.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.47-.4-.4-.54-.4h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.7 2.6 4.12 3.65.58.25 1.03.4 1.38.5.58.18 1.1.15 1.51.09.46-.07 1.43-.58 1.63-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28Z" />
     </svg>
   );
 }

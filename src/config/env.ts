@@ -7,6 +7,11 @@ const serverEnvironmentSchema = z.object({
   DB_USER: z.string().min(1),
   DB_PASSWORD: z.string().min(1),
   DB_SSL: z.enum(["true", "false"]).default("false"),
+  SMTP_HOST: z.string().trim().min(1).optional(),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+  SMTP_USER: z.string().trim().min(1).optional(),
+  SMTP_PASSWORD: z.string().min(1).optional(),
+  SMTP_FROM: z.string().trim().email().optional(),
 });
 export type ServerEnvironment = z.infer<typeof serverEnvironmentSchema>;
 export function getServerEnvironment(): ServerEnvironment {

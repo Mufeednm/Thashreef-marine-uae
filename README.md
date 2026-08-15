@@ -6,17 +6,17 @@ Production-oriented e-commerce platform foundation built with Next.js App Router
 
 The current local testing console is branded as `Marsa Edge Marine LLC`. It includes:
 
-- cookie-based local login backed by a SQLite database in `data/akbar-marine.sqlite`
+- cookie-based sign-in backed by MySQL
 - versioned SQLite catalog seeding for marine-only brands, main categories, subcategories, optional child categories, and products
 - page-based admin routes at `/admin`, `/admin/products`, `/admin/products/new`, and `/admin/categories`
 - admin category creation with many custom fields per category
 - a public `/` storefront redesigned as a dense premium marine accessories marketplace with dynamic database-backed main-category navigation, hover mega menus for subcategories, accessory-led hero carousel, category image cards, promotional banners, six product rails, brand carousel, testimonials, gallery, newsletter, quick product views, and an interactive local cart
 
-### Demo credentials
+The administrator account is seeded for local development, but credentials are intentionally not displayed in the application or this documentation.
 
-- Admin: `admin` / `admin123`
-- Staff: `staff` / `Staff@123`
-- Customer: `user` / `userpassword`
+### Order confirmation email
+
+To send real order-request confirmations, configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_FROM` in `.env.local`. The checkout saves the order even if SMTP is not configured or delivery fails, and only reports an email as sent after the mail server accepts it.
 
 ## Prerequisites
 

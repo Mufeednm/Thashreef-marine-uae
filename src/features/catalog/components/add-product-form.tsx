@@ -1,7 +1,8 @@
 "use client";
 
-import type { ReactElement } from "react";
-import { useActionState } from "react";
+import Image from "next/image";
+import type { ChangeEvent, ReactElement } from "react";
+import { useActionState, useState } from "react";
 import type { Category } from "@/domain/catalog/category";
 import type { Product } from "@/domain/catalog/product";
 import type { Brand } from "@/domain/demo-store/demo-store-repository";
@@ -24,28 +25,8 @@ export function AddProductForm({ brands, categories, product }: AddProductFormPr
   );
 
   return (
-    <form action={action} className="space-y-8" encType="multipart/form-data">
+    <form action={action} className="space-y-8">
       {product ? <input name="id" type="hidden" value={product.id} /> : null}
-      <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-xs font-bold tracking-[0.24em] text-[#f05a28] uppercase">
-              Product setup
-            </p>
-            <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-[#102846]">
-              {product ? "Edit catalog product" : "Create a new catalog product"}
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              Build the product in clear steps: assign the catalog basics first, then set pricing
-              and presentation details. This writes directly into the local SQLite catalog.
-            </p>
-          </div>
-          <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            {categories.length} categories available
-          </div>
-        </div>
-      </section>
-
       <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
         <div className="border-b border-slate-100 pb-4">
           <h3 className="text-lg font-bold text-[#102846]">1. Product details</h3>
@@ -71,14 +52,6 @@ export function AddProductForm({ brands, categories, product }: AddProductFormPr
             placeholder="اسم المنتج بالعربية"
           />
           <BrandSelect brands={brands} currentBrand={product?.brand} error={state.fieldErrors?.brand?.[0]} />
-          <Field
-            error={state.fieldErrors?.sku?.[0]}
-            label="SKU"
-            name="sku"
-            placeholder="VIC-BSC-1215"
-            defaultValue={product?.sku}
-            required
-          />
           <SelectField
             categories={categories}
             error={state.fieldErrors?.categoryId?.[0]}
@@ -144,13 +117,7 @@ export function AddProductForm({ brands, categories, product }: AddProductFormPr
             placeholder="820.00"
             defaultValue={product?.salePriceAedCents ? (product.salePriceAedCents / 100).toFixed(2) : undefined}
           />
-          <label className="block space-y-2">
-            <span className="text-sm font-semibold text-slate-700">Product image</span>
-            <input accept="image/jpeg,image/png,image/webp" className="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-[#e8f1fa] file:px-3 file:py-2 file:text-sm file:font-bold file:text-[#0e568f] hover:file:bg-[#dcecf8]" name="imageFile" type="file" />
-            <p className="text-xs leading-5 text-slate-500">JPG, PNG, or WebP · maximum 5 MB. Images are saved to this server&apos;s product uploads folder.</p>
-            {product ? <p className="text-xs text-slate-500">Leave empty to keep the current image.</p> : null}
-            {state.fieldErrors?.imageFile?.[0] ? <p className="text-sm text-rose-600">{state.fieldErrors.imageFile[0]}</p> : null}
-          </label>
+          <ProductImageFields product={product} state={state} />
         </div>
       </section>
 
@@ -226,6 +193,34 @@ function Field({
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
     </label>
   );
+}
+
+type ProductImageFieldName = "imageFile" | "secondaryImageFile" | "tertiaryImageFile";
+
+function ProductImageFields({ product, state }: { product?: Product; state: CreateProductActionState }): ReactElement {
+  const [previews, setPreviews] = useState<Record<ProductImageFieldName, string | null>>({
+    imageFile: product?.imageUrl ?? null,
+    secondaryImageFile: product?.secondaryImageUrl ?? null,
+    tertiaryImageFile: product?.tertiaryImageUrl ?? null,
+  });
+
+  function updatePreview(name: ProductImageFieldName, event: ChangeEvent<HTMLInputElement>): void {
+    const file = event.currentTarget.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      if (typeof reader.result === "string") setPreviews((current) => ({ ...current, [name]: reader.result }));
+    });
+    reader.readAsDataURL(file);
+  }
+
+  const fields: Array<{ error?: string; label: string; name: ProductImageFieldName; required: boolean }> = [
+    { error: state.fieldErrors?.imageFile?.[0], label: "Primary image", name: "imageFile", required: !product },
+    { error: state.fieldErrors?.secondaryImageFile?.[0], label: "Image 2", name: "secondaryImageFile", required: false },
+    { error: state.fieldErrors?.tertiaryImageFile?.[0], label: "Image 3", name: "tertiaryImageFile", required: false },
+  ];
+
+  return <div className="lg:col-span-2"><div className="flex flex-col gap-1"><h4 className="text-sm font-semibold text-slate-700">Product gallery</h4><p className="text-xs leading-5 text-slate-500">Add up to three JPG, PNG, or WebP images (5 MB each). The first image is the storefront cover.</p></div><div className="mt-3 grid gap-4 sm:grid-cols-3">{fields.map((field) => <label className="rounded-2xl border border-slate-200 bg-slate-50 p-3" key={field.name}><span className="text-sm font-semibold text-slate-700">{field.label} {field.required ? <span className="text-rose-600">*</span> : null}</span><span className="mt-3 flex aspect-square overflow-hidden rounded-xl border border-dashed border-slate-300 bg-white">{previews[field.name] ? <Image alt={`${field.label} preview`} className="h-full w-full object-cover" height={320} src={previews[field.name] ?? ""} unoptimized width={320} /> : <span className="m-auto px-3 text-center text-xs leading-5 text-slate-400">Choose an image to preview it here.</span>}</span><input accept="image/jpeg,image/png,image/webp" className="mt-3 block w-full text-xs text-slate-600 file:mr-2 file:rounded-lg file:border-0 file:bg-[#e8f1fa] file:px-2.5 file:py-2 file:text-xs file:font-bold file:text-[#0e568f] hover:file:bg-[#dcecf8]" name={field.name} onChange={(event) => updatePreview(field.name, event)} required={field.required} type="file" />{product ? <span className="mt-2 block text-xs leading-5 text-slate-500">Leave empty to keep the current image.</span> : null}{field.error ? <span className="mt-2 block text-sm text-rose-600">{field.error}</span> : null}</label>)}</div></div>;
 }
 
 function SelectField({

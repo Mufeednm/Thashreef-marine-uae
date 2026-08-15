@@ -1,7 +1,6 @@
 import type { ReactElement } from "react";
 import type { Category } from "@/domain/catalog/category";
 import type { Product } from "@/domain/catalog/product";
-import type { ProductVariant } from "@/domain/catalog/product-variant";
 import type {
   AdminActivityMetrics,
   AdminOverviewMetrics,
@@ -15,7 +14,6 @@ interface AdminOverviewPageProps {
   metrics: AdminOverviewMetrics;
   products: Product[];
   recentOrders: AdminRecentOrder[];
-  variants: ProductVariant[];
 }
 
 export function AdminOverviewPage({
@@ -24,7 +22,6 @@ export function AdminOverviewPage({
   metrics,
   products,
   recentOrders,
-  variants,
 }: AdminOverviewPageProps): ReactElement {
   return (
     <div className="space-y-7">
@@ -35,9 +32,9 @@ export function AdminOverviewPage({
           value={products.length.toString()}
         />
         <Metric
-          detail={`${variants.length} active variants`}
-          label="Product variants"
-          value={variants.length.toLocaleString("en-AE")}
+          detail="Customer orders received"
+          label="Orders"
+          value={metrics.orderCount.toLocaleString("en-AE")}
         />
         <Metric
           detail={`${metrics.activeCoupons} active coupons`}
