@@ -899,7 +899,7 @@ async function syncMarineCatalogSeed(): Promise<void> {
   const database = getDatabaseConnection();
 
   const [currentVersion] = await database.query<{ value: string }>(
-    "SELECT value FROM seed_meta WHERE key = 'marine_catalog_version' LIMIT 1",
+    "SELECT value FROM seed_meta WHERE `key` = 'marine_catalog_version' LIMIT 1",
     { type: QueryTypes.SELECT },
   );
 

@@ -15,3 +15,5 @@ The Hostinger build log showed that `sqlite3` failed to load because the runtime
 ## Deployment follow-up
 
 Hostinger requires `mysql2` to be imported explicitly because Sequelize loads the driver dynamically. The connection factory supplies the imported driver to Sequelize, ensuring that Next.js includes it in the server bundle.
+
+The first production initialization exposed a MySQL query using the reserved `key` identifier without quoting it. The seed-version lookup now quotes that identifier consistently with the schema and insert statement.
