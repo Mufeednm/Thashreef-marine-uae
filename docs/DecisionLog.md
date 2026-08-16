@@ -6,6 +6,12 @@
 - **Reason:** The seeded administrator uses the `admin` username, and the repository already performs a case-insensitive lookup across both identifiers.
 - **Impact:** The administrator can sign in with the requested username and password, while password hashes and customer email validation remain unchanged.
 
+## 2026-08-16 - Separate administrator and checkout login labels
+
+- **Decision:** Present a Username field only on the administrator login screen and retain Email address on storefront and checkout login forms.
+- **Reason:** Customer checkout must not expose administrator terminology or credentials.
+- **Impact:** The shared sign-in flow retains its secure server-side identifier handling, while each audience sees only the relevant field label and prompt.
+
 ## 2026-08-16 - Email-first customer access and reliable order notifications
 
 - **Decision:** Accept email and password only for sign-in, reject category parent assignments that create a hierarchy cycle, and send confirmation email immediately after each saved order when complete SMTP settings are configured.

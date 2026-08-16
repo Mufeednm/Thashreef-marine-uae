@@ -48,6 +48,7 @@ export function LoginForm({
   const [registrationValues, setRegistrationValues] =
     useState<RegistrationValues>(emptyRegistrationValues);
   const isRegistering = mode === "register";
+  const isAdminLogin = variant === "admin" && !isRegistering;
   const activeState = isRegistering ? registrationState : state;
 
   function updateRegistrationValue(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>): void {
@@ -187,7 +188,7 @@ export function LoginForm({
 
       <label className="block space-y-2">
         <span className="text-sm font-medium text-slate-700">
-          {isRegistering ? "Email address" : "Username or email address"}
+          {isRegistering ? "Email address" : isAdminLogin ? "Username" : "Email address"}
         </span>
         <input
           key={isRegistering ? "register-email" : "login-email"}
@@ -214,11 +215,17 @@ export function LoginForm({
                 : activeState.fieldErrors?.identifier?.[0],
             ),
           )}
-          autoComplete={isRegistering ? "email" : "username"}
+          autoComplete={isRegistering || !isAdminLogin ? "email" : "username"}
           name={isRegistering ? "email" : "identifier"}
           onChange={isRegistering ? updateRegistrationValue : undefined}
-          placeholder={isRegistering ? "name@example.com" : "admin or name@example.com"}
-          type={isRegistering ? "email" : "text"}
+          placeholder={
+            isRegistering
+              ? "name@example.com"
+              : isAdminLogin
+                ? "Enter your username"
+                : "name@example.com"
+          }
+          type={isRegistering || !isAdminLogin ? "email" : "text"}
           value={isRegistering ? registrationValues.email : undefined}
         />
         {isRegistering && activeState.fieldErrors?.email?.[0] ? (

@@ -99,3 +99,5 @@ Customer and administrator sign-in now use an email address and password; the fo
 ## Administrator login compatibility follow-up
 
 The sign-in form now accepts either a username or email address. This preserves the requested seeded administrator access through `admin` and its configured password, while customer registration continues to require an email address and all stored passwords remain salted hashes.
+
+The administrator screen now labels that field as Username, while storefront and checkout access remain labelled Email address and no longer surface administrator terminology.
