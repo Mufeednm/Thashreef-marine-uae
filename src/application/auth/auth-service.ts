@@ -4,7 +4,7 @@ import { toSessionUser } from "@/domain/auth/user";
 import { hashPassword, verifyPasswordHash } from "@/shared/security/password-hash";
 
 export interface LoginCredentials {
-  email: string;
+  identifier: string;
   password: string;
 }
 
@@ -12,7 +12,7 @@ export async function authenticateUser(
   repository: DemoStoreRepository,
   credentials: LoginCredentials,
 ): Promise<SessionUser | null> {
-  const user = await repository.findUserByEmail(credentials.email);
+  const user = await repository.findUserByEmail(credentials.identifier);
 
   if (!user) {
     return null;

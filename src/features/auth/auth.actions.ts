@@ -14,21 +14,21 @@ export async function loginAction(
   formData: FormData,
 ): Promise<LoginActionState> {
   const parsedCredentials = loginSchema.safeParse({
-    email: formData.get("email"),
+    identifier: formData.get("identifier"),
     password: formData.get("password"),
   });
 
   if (!parsedCredentials.success) {
     return {
       fieldErrors: parsedCredentials.error.flatten().fieldErrors,
-      message: "Enter your email address and password to continue.",
+      message: "Enter your username or email address and password to continue.",
       status: "error",
     };
   }
 
   const repository = createDemoStoreRepository();
   const authenticatedUser = await authenticateUser(repository, {
-    email: parsedCredentials.data.email.toLowerCase(),
+    identifier: parsedCredentials.data.identifier.toLowerCase(),
     password: parsedCredentials.data.password,
   });
 

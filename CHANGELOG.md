@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Restore username-or-email sign-in so the seeded administrator can use `admin` with its configured password.
 - Prevent category-parent loops, require email-and-password sign-in, and send order confirmation emails through configured SMTP.
 - Remove Display Order from all administrator brand and category forms, tables, and detail dialogs while preserving existing sort values internally.
 - Enlarge storefront brand imagery and add the uploaded brand image to the public brand catalogue header.

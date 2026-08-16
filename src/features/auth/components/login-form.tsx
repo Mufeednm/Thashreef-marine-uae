@@ -186,23 +186,39 @@ export function LoginForm({
       ) : null}
 
       <label className="block space-y-2">
-        <span className="text-sm font-medium text-slate-700">Email address</span>
+        <span className="text-sm font-medium text-slate-700">
+          {isRegistering ? "Email address" : "Username or email address"}
+        </span>
         <input
           key={isRegistering ? "register-email" : "login-email"}
           aria-describedby={
-            activeState.fieldErrors?.email?.[0]
+            (
+              isRegistering
+                ? activeState.fieldErrors?.email?.[0]
+                : activeState.fieldErrors?.identifier?.[0]
+            )
               ? isRegistering
                 ? "registration-email-error"
                 : "login-email-error"
               : undefined
           }
-          aria-invalid={Boolean(activeState.fieldErrors?.email?.[0])}
-          className={inputClass(Boolean(activeState.fieldErrors?.email?.[0]))}
-          autoComplete="email"
-          name="email"
+          aria-invalid={Boolean(
+            isRegistering
+              ? activeState.fieldErrors?.email?.[0]
+              : activeState.fieldErrors?.identifier?.[0],
+          )}
+          className={inputClass(
+            Boolean(
+              isRegistering
+                ? activeState.fieldErrors?.email?.[0]
+                : activeState.fieldErrors?.identifier?.[0],
+            ),
+          )}
+          autoComplete={isRegistering ? "email" : "username"}
+          name={isRegistering ? "email" : "identifier"}
           onChange={isRegistering ? updateRegistrationValue : undefined}
-          placeholder="name@example.com"
-          type="email"
+          placeholder={isRegistering ? "name@example.com" : "admin or name@example.com"}
+          type={isRegistering ? "email" : "text"}
           value={isRegistering ? registrationValues.email : undefined}
         />
         {isRegistering && activeState.fieldErrors?.email?.[0] ? (
@@ -214,9 +230,9 @@ export function LoginForm({
             {activeState.fieldErrors.email[0]}
           </p>
         ) : null}
-        {!isRegistering && activeState.fieldErrors?.email?.[0] ? (
+        {!isRegistering && activeState.fieldErrors?.identifier?.[0] ? (
           <p className="text-sm font-medium text-rose-700" id="login-email-error" role="alert">
-            {activeState.fieldErrors.email[0]}
+            {activeState.fieldErrors.identifier[0]}
           </p>
         ) : null}
       </label>

@@ -8,6 +8,7 @@ export interface LoginActionState {
   fieldErrors?: {
     countryCode?: string[];
     email?: string[];
+    identifier?: string[];
     name?: string[];
     password?: string[];
     phone?: string[];

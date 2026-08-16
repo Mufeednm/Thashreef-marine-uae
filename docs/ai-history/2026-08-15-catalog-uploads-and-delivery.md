@@ -95,3 +95,7 @@ Display Order was removed from every administrator-facing brand and category vie
 ## Account, category, and email follow-up
 
 Customer and administrator sign-in now use an email address and password; the form no longer accepts a username. Category editing rejects any parent selection that would place a category beneath itself, one of its descendants, or an already looping parent chain. Order confirmations are now sent via Nodemailer when `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_FROM` are configured in `.env.local`; the order remains recorded if that separate mail delivery fails or is not configured.
+
+## Administrator login compatibility follow-up
+
+The sign-in form now accepts either a username or email address. This preserves the requested seeded administrator access through `admin` and its configured password, while customer registration continues to require an email address and all stored passwords remain salted hashes.

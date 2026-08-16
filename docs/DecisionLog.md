@@ -1,5 +1,11 @@
 # Decision Log
 
+## 2026-08-16 - Administrator username sign-in compatibility
+
+- **Decision:** Accept either a username or email address at sign-in while continuing to use email-only customer registration.
+- **Reason:** The seeded administrator uses the `admin` username, and the repository already performs a case-insensitive lookup across both identifiers.
+- **Impact:** The administrator can sign in with the requested username and password, while password hashes and customer email validation remain unchanged.
+
 ## 2026-08-16 - Email-first customer access and reliable order notifications
 
 - **Decision:** Accept email and password only for sign-in, reject category parent assignments that create a hierarchy cycle, and send confirmation email immediately after each saved order when complete SMTP settings are configured.
