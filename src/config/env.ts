@@ -7,6 +7,7 @@ const serverEnvironmentSchema = z.object({
   DB_USER: z.string().min(1),
   DB_PASSWORD: z.string().min(1),
   DB_SSL: z.enum(["true", "false"]).default("false"),
+  CATALOG_UPLOADS_DIRECTORY: z.string().trim().min(1).optional(),
   SEED_DEMO_DATA: z
     .enum(["true", "false"])
     .optional()

@@ -2,8 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { z } from "zod";
 import {
   createBrandForAdmin,
@@ -19,6 +17,7 @@ import {
 } from "@/application/catalog/catalog-service";
 import { requireAdminUser } from "@/application/auth/auth-service";
 import { readSessionUser } from "@/infrastructure/auth/session-cookie";
+import { persistCatalogImage } from "@/infrastructure/catalog/persistent-catalog-image-storage";
 import { createDemoStoreRepository } from "@/infrastructure/demo-store/file-demo-store-repository";
 import {
   brandSchema,
@@ -326,20 +325,6 @@ function productValidationMessage(fieldErrors: Record<string, string[] | undefin
 
 async function persistProductImage(file: File | null): Promise<string | undefined> {
   return persistCatalogImage(file, "products");
-}
-
-async function persistCatalogImage(
-  file: File | null,
-  directory: "brands" | "categories" | "products",
-): Promise<string | undefined> {
-  if (!file || file.size === 0) return undefined;
-  const extension = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[file.type];
-  if (!extension) return undefined;
-  const uploadsDirectory = path.join(process.cwd(), "public", "uploads", directory);
-  await mkdir(uploadsDirectory, { recursive: true });
-  const fileName = `${randomUUID()}.${extension}`;
-  await writeFile(path.join(uploadsDirectory, fileName), Buffer.from(await file.arrayBuffer()));
-  return `/uploads/${directory}/${fileName}`;
 }
 
 async function getAdminContext() {

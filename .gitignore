@@ -25,6 +25,8 @@
 *.pem
 .npm-cache/
 data/*.sqlite
+data/catalog-uploads/
+public/uploads/
 public/product-uploads/
 
 # debug

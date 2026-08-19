@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Store administrator-uploaded catalogue images in a configured persistent directory and serve them through a validated `/uploads/*` route, preventing Git deployments from deleting future product, brand, and category images.
 - Close administrator create modals automatically after a successful product, brand, main-category, or subcategory save so the refreshed table is immediately visible.
 - Add an administrator-only Security page that verifies the current password before securely replacing it with a new password.
 - Add accessible per-product Visible/Hidden toggles in the admin table; hidden products are excluded from all storefront listings and product detail pages.

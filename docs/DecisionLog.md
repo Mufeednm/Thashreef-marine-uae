@@ -409,6 +409,12 @@ Render's Node 24 build image selected a prebuilt `sqlite3` binary requiring GLIB
 - **Reason:** Hard-coded category names and stock images diverged from the categories an administrator manages.
 - **Impact:** Selecting a main category filters the catalogue to all products assigned to its subcategories; an empty catalogue shows an explanatory empty state instead of static cards.
 
+## 2026-08-20 - Persist catalogue uploads outside deployments
+
+- **Decision:** Store administrator-uploaded product, category, and brand images in `CATALOG_UPLOADS_DIRECTORY`, outside the Git deployment directory, and serve validated files through the application’s `/uploads/*` route.
+- **Reason:** Git deployments replace the application runtime and previously removed files written beneath `public/uploads`, while MySQL retained their paths.
+- **Impact:** Production defaults to a directory under the server account home folder and can use `CATALOG_UPLOADS_DIRECTORY` to override that location. Existing missing files still need to be restored from an original source or backup; all new uploads persist through redeployments.
+
 ## 2026-08-19 - Disable automatic demo seeding
 
 - **Decision:** Do not create demo users, brands, categories, products, or homepage banners when the application starts.
