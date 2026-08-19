@@ -121,6 +121,7 @@ export interface DemoStoreRepository {
   createOrder(input: CreateOrderInput): Promise<AdminRecentOrder>;
   findUserByEmail(emailOrUsername: string): Promise<DemoUser | null>;
   findUserById(id: string): Promise<DemoUser | null>;
+  updateUserPassword(id: string, passwordHash: string): Promise<boolean>;
   findCustomerByEmail(email: string): Promise<AdminCustomer | null>;
   findCustomerByPhone(phone: string): Promise<AdminCustomer | null>;
   getAdminOverviewMetrics(): Promise<AdminOverviewMetrics>;
@@ -142,4 +143,5 @@ export interface DemoStoreRepository {
     input: Omit<PersistedCategoryInput, "slug" | "fieldLabels">,
   ): Promise<Category | null>;
   updateProduct(id: string, input: CreateProductInput): Promise<Product | null>;
+  updateProductVisibility(id: string, isActive: boolean): Promise<Product | null>;
 }

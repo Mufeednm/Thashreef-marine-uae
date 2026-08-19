@@ -15,6 +15,7 @@ import {
   updateBrandForAdmin,
   updateCategoryForAdmin,
   updateProductForAdmin,
+  updateProductVisibilityForAdmin,
 } from "@/application/catalog/catalog-service";
 import { requireAdminUser } from "@/application/auth/auth-service";
 import { readSessionUser } from "@/infrastructure/auth/session-cookie";
@@ -242,6 +243,38 @@ export async function deleteProductAction(
   if (!result.ok) return { message: "This product could not be deleted.", status: "error" };
   revalidateCatalogAdmin();
   return { message: "Product deleted from the catalog.", status: "success" };
+}
+
+const productVisibilitySchema = z.object({
+  id: z.string().uuid(),
+  isActive: z.enum(["true", "false"]).transform((value) => value === "true"),
+});
+
+export async function updateProductVisibilityAction(
+  _previousState: CreateProductActionState,
+  formData: FormData,
+): Promise<CreateProductActionState> {
+  const parsed = productVisibilitySchema.safeParse({
+    id: formData.get("id"),
+    isActive: formData.get("isActive"),
+  });
+  if (!parsed.success) return { message: "Invalid product visibility request.", status: "error" };
+
+  const repository = createDemoStoreRepository();
+  const result = await updateProductVisibilityForAdmin(
+    repository,
+    await requireAdminUser(repository, await readSessionUser()),
+    parsed.data.id,
+    parsed.data.isActive,
+  );
+  if (!result.ok)
+    return { message: "This product visibility could not be updated.", status: "error" };
+  revalidateCatalogAdmin();
+  revalidatePath(`/products/${result.product.slug}`);
+  return {
+    message: `${result.product.name} is now ${result.product.isActive ? "visible" : "hidden"}.`,
+    status: "success",
+  };
 }
 
 function productFormValues(formData: FormData) {

@@ -8,6 +8,10 @@ export interface LoginCredentials {
   password: string;
 }
 
+export type ChangeAdminPasswordResult =
+  | { ok: true }
+  | { ok: false; reason: "invalid-current-password" | "same-password" | "unauthorized" };
+
 export async function authenticateUser(
   repository: DemoStoreRepository,
   credentials: LoginCredentials,
@@ -62,6 +66,27 @@ export async function requireAdminUser(
   }
 
   return user;
+}
+
+export async function changeAdminPassword(
+  repository: DemoStoreRepository,
+  sessionUser: SessionUser | null,
+  input: { currentPassword: string; newPassword: string },
+): Promise<ChangeAdminPasswordResult> {
+  const admin = await requireAdminUser(repository, sessionUser);
+  if (!admin) return { ok: false, reason: "unauthorized" };
+
+  const storedUser = await repository.findUserById(admin.id);
+  if (!storedUser || !verifyPassword(storedUser.password, input.currentPassword)) {
+    return { ok: false, reason: "invalid-current-password" };
+  }
+  if (verifyPassword(storedUser.password, input.newPassword)) {
+    return { ok: false, reason: "same-password" };
+  }
+
+  return (await repository.updateUserPassword(admin.id, hashPassword(input.newPassword)))
+    ? { ok: true }
+    : { ok: false, reason: "unauthorized" };
 }
 
 function verifyPassword(storedPassword: string, submittedPassword: string): boolean {

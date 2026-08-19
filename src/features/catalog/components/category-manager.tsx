@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, type ReactElement, type ReactNode } from "react";
+import { useActionState, useEffect, useState, type ReactElement, type ReactNode } from "react";
 import type { Category } from "@/domain/catalog/category";
 import {
   createCategoryAction,
@@ -77,7 +77,7 @@ export function CategoryManager({ categories }: { categories: Category[] }): Rea
       ) : null}
       {createMainOpen ? (
         <Modal close={() => setCreateMainOpen(false)} title="Create main category">
-          <CategoryForm />
+          <CategoryForm onSuccess={() => setCreateMainOpen(false)} />
         </Modal>
       ) : null}
       {selectedMainCategory ? (
@@ -221,7 +221,7 @@ function SubcategoryModal({
           >
             Back to subcategories
           </button>
-          <CategoryForm parentCategory={mainCategory} />
+          <CategoryForm onSuccess={close} parentCategory={mainCategory} />
         </>
       ) : (
         <>
@@ -319,9 +319,11 @@ function SubcategoryRow({
 
 function CategoryForm({
   category,
+  onSuccess,
   parentCategory,
 }: {
   category?: Category;
+  onSuccess?: () => void;
   parentCategory?: Category;
 }): ReactElement {
   const [state, action, pending] = useActionState<CreateCategoryActionState, FormData>(
@@ -330,6 +332,10 @@ function CategoryForm({
   );
   const parentCategoryId = category?.parentCategoryId ?? parentCategory?.id ?? null;
   const isSubcategory = parentCategoryId !== null;
+
+  useEffect(() => {
+    if (!category && state.status === "success") onSuccess?.();
+  }, [category, onSuccess, state.status]);
 
   return (
     <form action={action} className="grid gap-5">

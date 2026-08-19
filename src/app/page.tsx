@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import {
   listCatalogBrands,
   listCatalogCategoryTree,
-  listCatalogProducts,
+  listStorefrontProducts,
   listHomepageBanners,
 } from "@/application/catalog/catalog-service";
 import { restoreSessionUser } from "@/application/auth/auth-service";
@@ -17,7 +17,7 @@ export default async function Home(): Promise<ReactElement> {
   const [brands, categoryTree, products, banners] = await Promise.all([
     listCatalogBrands(repository),
     listCatalogCategoryTree(repository),
-    listCatalogProducts(repository),
+    listStorefrontProducts(repository),
     listHomepageBanners(repository),
   ]);
 

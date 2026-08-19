@@ -223,6 +223,15 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     return (await this.listProducts()).find((product) => product.id === id) ?? null;
   }
 
+  async updateProductVisibility(id: string, isActive: boolean): Promise<Product | null> {
+    await ensureDatabase();
+    await getDatabaseConnection().query(
+      "UPDATE products SET is_active = :isActive WHERE id = :id",
+      { replacements: { id, isActive: isActive ? 1 : 0 } },
+    );
+    return (await this.listProducts()).find((product) => product.id === id) ?? null;
+  }
+
   async addCategory(input: {
     bannerImageUrl?: string | null;
     displayOrder: number;
@@ -564,6 +573,20 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     );
 
     return users[0] ?? null;
+  }
+
+  async updateUserPassword(id: string, passwordHash: string): Promise<boolean> {
+    await ensureDatabase();
+    const database = getDatabaseConnection();
+    const [admin] = await database.query<{ id: string }>(
+      "SELECT id FROM users WHERE id = :id AND role = 'admin' LIMIT 1",
+      { replacements: { id }, type: QueryTypes.SELECT },
+    );
+    if (!admin) return false;
+    await database.query("UPDATE users SET password = :passwordHash WHERE id = :id", {
+      replacements: { id, passwordHash },
+    });
+    return true;
   }
 
   async findCustomerByEmail(email: string): Promise<AdminCustomer | null> {

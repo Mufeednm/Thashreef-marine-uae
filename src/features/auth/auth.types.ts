@@ -20,3 +20,17 @@ export interface LoginActionState {
 export const initialLoginActionState: LoginActionState = {
   status: "idle",
 };
+
+export interface ChangeAdminPasswordActionState {
+  fieldErrors?: {
+    confirmPassword?: string[];
+    currentPassword?: string[];
+    newPassword?: string[];
+  };
+  message?: string;
+  status: "error" | "idle" | "success";
+}
+
+export const initialChangeAdminPasswordActionState: ChangeAdminPasswordActionState = {
+  status: "idle",
+};

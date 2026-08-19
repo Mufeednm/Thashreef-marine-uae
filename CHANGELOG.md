@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Close administrator create modals automatically after a successful product, brand, main-category, or subcategory save so the refreshed table is immediately visible.
+- Add an administrator-only Security page that verifies the current password before securely replacing it with a new password.
+- Add accessible per-product Visible/Hidden toggles in the admin table; hidden products are excluded from all storefront listings and product detail pages.
+- Add admin product-table search by English or Arabic name, plus brand and subcategory filters.
 - Replace the browser-tab icon with a square Marsa Edge Marine mark.
 - Point the storefront WhatsApp contact button to the requested UAE number, 0527035250.
 - Use a compact, click-pinned subcategory-only dropdown directly below the hovered main category. It is rendered above page layers so it cannot be hidden by the storefront hero.

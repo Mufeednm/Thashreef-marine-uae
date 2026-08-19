@@ -17,3 +17,20 @@ export const registrationSchema = z.object({
     .trim()
     .regex(/^\d{6,14}$/, { error: "Enter 6–14 digits without the country code." }),
 });
+
+export const changeAdminPasswordSchema = z
+  .object({
+    confirmPassword: z
+      .string()
+      .min(8, { error: "Confirm the new password (at least 8 characters)." })
+      .max(128),
+    currentPassword: z.string().min(8, { error: "Enter your current password." }).max(128),
+    newPassword: z
+      .string()
+      .min(8, { error: "Use at least 8 characters for the new password." })
+      .max(128),
+  })
+  .refine((values) => values.newPassword === values.confirmPassword, {
+    error: "The new password and confirmation do not match.",
+    path: ["confirmPassword"],
+  });

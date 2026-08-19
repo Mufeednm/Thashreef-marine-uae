@@ -2,12 +2,24 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { authenticateUser, registerCustomer } from "@/application/auth/auth-service";
+import {
+  authenticateUser,
+  changeAdminPassword,
+  registerCustomer,
+} from "@/application/auth/auth-service";
 import type { SessionUser } from "@/domain/auth/user";
 import { createDemoStoreRepository } from "@/infrastructure/demo-store/file-demo-store-repository";
-import { clearSessionCookie, writeSessionCookie } from "@/infrastructure/auth/session-cookie";
-import { loginSchema, registrationSchema } from "@/features/auth/auth.schemas";
-import type { LoginActionState } from "@/features/auth/auth.types";
+import {
+  clearSessionCookie,
+  readSessionUser,
+  writeSessionCookie,
+} from "@/infrastructure/auth/session-cookie";
+import {
+  changeAdminPasswordSchema,
+  loginSchema,
+  registrationSchema,
+} from "@/features/auth/auth.schemas";
+import type { ChangeAdminPasswordActionState, LoginActionState } from "@/features/auth/auth.types";
 
 export async function loginAction(
   _previousState: LoginActionState,
@@ -53,6 +65,44 @@ export async function loginAction(
 export async function logoutAction(): Promise<void> {
   await clearSessionCookie();
   redirect("/");
+}
+
+export async function changeAdminPasswordAction(
+  _previousState: ChangeAdminPasswordActionState,
+  formData: FormData,
+): Promise<ChangeAdminPasswordActionState> {
+  const parsed = changeAdminPasswordSchema.safeParse({
+    confirmPassword: formData.get("confirmPassword"),
+    currentPassword: formData.get("currentPassword"),
+    newPassword: formData.get("newPassword"),
+  });
+  if (!parsed.success) {
+    return {
+      fieldErrors: parsed.error.flatten().fieldErrors,
+      message: "Please correct the password fields.",
+      status: "error",
+    };
+  }
+
+  const result = await changeAdminPassword(
+    createDemoStoreRepository(),
+    await readSessionUser(),
+    parsed.data,
+  );
+  if (!result.ok) {
+    const messages = {
+      "invalid-current-password": "Your current password is incorrect.",
+      "same-password": "Choose a different new password.",
+      unauthorized: "Only the signed-in administrator can change this password.",
+    } satisfies Record<typeof result.reason, string>;
+    return { message: messages[result.reason], status: "error" };
+  }
+
+  revalidatePath("/admin/settings");
+  return {
+    message: "Password changed. Your previous password no longer works.",
+    status: "success",
+  };
 }
 
 export async function registerAction(

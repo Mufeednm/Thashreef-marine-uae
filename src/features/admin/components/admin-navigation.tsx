@@ -11,6 +11,7 @@ const navigation = [
   { href: "/admin/categories", label: "Categories" },
   { href: "/admin/customers", label: "Customers" },
   { href: "/admin/orders", label: "Orders" },
+  { href: "/admin/settings", label: "Security" },
 ] as const;
 
 export function AdminNavigation(): ReactElement {

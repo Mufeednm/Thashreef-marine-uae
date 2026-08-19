@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 import {
   listCatalogBrands,
   listCatalogCategoryTree,
-  listCatalogProducts,
+  listStorefrontProducts,
   listHomepageBanners,
 } from "@/application/catalog/catalog-service";
 import { StorefrontExperience } from "@/features/storefront/components/storefront-experience";
@@ -15,9 +15,16 @@ export default async function ShopPage(): Promise<ReactElement> {
   const [brands, categoryTree, products, banners] = await Promise.all([
     listCatalogBrands(repository),
     listCatalogCategoryTree(repository),
-    listCatalogProducts(repository),
+    listStorefrontProducts(repository),
     listHomepageBanners(repository),
   ]);
 
-  return <StorefrontExperience banners={banners} brands={brands} categoryTree={categoryTree} products={products} />;
+  return (
+    <StorefrontExperience
+      banners={banners}
+      brands={brands}
+      categoryTree={categoryTree}
+      products={products}
+    />
+  );
 }

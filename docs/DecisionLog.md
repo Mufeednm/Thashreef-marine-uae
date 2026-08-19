@@ -1,5 +1,17 @@
 # Decision Log
 
+## 2026-08-20 - Administrator password and product publication controls
+
+- **Decision:** Provide a dedicated admin-only Security page that requires the current password and a confirmed replacement password. Use a per-product Visible/Hidden switch in the admin table and filter inactive products at the public catalogue-service boundary.
+- **Reason:** Password changes need proof of account ownership, and product publication must be a reversible action without deleting records. Filtering only in the UI would leave hidden products reachable through direct links.
+- **Impact:** The old administrator password is replaced with a new salted hash only after verification. Administrators retain access to all products, while customers see only visible products across the homepage, shop, brand, and product pages.
+
+## 2026-08-20 - Close create dialogs after save
+
+- **Decision:** Close an administrator create modal only after its server action reports a successful save.
+- **Reason:** Administrators should return directly to the refreshed table after creating a record, while validation and save errors must remain visible in the open dialog.
+- **Impact:** Product, brand, main-category, and subcategory creation closes its modal on success and retains it on failure.
+
 ## 2026-08-19 - Marsa Edge browser-tab icon
 
 - **Decision:** Use a square Marsa Edge ship-wheel and compass logo asset for the browser tab, bookmarks, and Apple touch icon.

@@ -7,7 +7,10 @@ import type { Category } from "@/domain/catalog/category";
 import type { Product } from "@/domain/catalog/product";
 import type { Brand } from "@/domain/demo-store/demo-store-repository";
 import { formatAedFromCents } from "@/shared/utils/currency";
-import { deleteProductAction } from "@/features/catalog/catalog.actions";
+import {
+  deleteProductAction,
+  updateProductVisibilityAction,
+} from "@/features/catalog/catalog.actions";
 import { AddProductForm } from "@/features/catalog/components/add-product-form";
 import {
   initialCreateProductActionState,
@@ -26,7 +29,9 @@ export function AdminProductsPage({
   products,
 }: AdminProductsPageProps): ReactElement {
   const [categoryId, setCategoryId] = useState<number | "all">("all");
+  const [brandName, setBrandName] = useState("all");
   const [createOpen, setCreateOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
   const productCategories = useMemo(
     () =>
@@ -41,20 +46,18 @@ export function AdminProductsPage({
       ),
     [categories],
   );
-  const categoriesWithProducts = useMemo(
-    () =>
-      productCategories.filter((category) =>
-        products.some((product) => product.categoryId === category.id),
-      ),
-    [productCategories, products],
-  );
-  const filteredProducts = useMemo(
-    () =>
-      categoryId === "all"
-        ? products
-        : products.filter((product) => product.categoryId === categoryId),
-    [categoryId, products],
-  );
+  const filteredProducts = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLocaleLowerCase();
+    return products.filter((product) => {
+      const matchesSearch =
+        normalizedSearch.length === 0 ||
+        product.name.toLocaleLowerCase().includes(normalizedSearch) ||
+        product.nameAr?.toLocaleLowerCase().includes(normalizedSearch);
+      const matchesBrand = brandName === "all" || product.brand === brandName;
+      const matchesSubcategory = categoryId === "all" || product.categoryId === categoryId;
+      return matchesSearch && matchesBrand && matchesSubcategory;
+    });
+  }, [brandName, categoryId, products, searchQuery]);
 
   return (
     <div className="space-y-7">
@@ -71,28 +74,52 @@ export function AdminProductsPage({
         <div className="flex flex-col gap-3 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-bold text-[#102846]">All catalog products</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              {filteredProducts.length} products shown. Use the category filter to narrow the
-              catalogue.
-            </p>
+            <p className="mt-1 text-sm text-slate-500">{filteredProducts.length} products shown.</p>
           </div>
-          <label className="flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-600">
-            <span className="sr-only">Filter products by category</span>
-            <select
-              className="min-h-11 max-w-full rounded-xl border border-slate-200 bg-white px-3 outline-none transition focus:border-[#0e568f]"
-              onChange={(event) =>
-                setCategoryId(event.target.value === "all" ? "all" : Number(event.target.value))
-              }
-              value={categoryId}
-            >
-              <option value="all">All populated categories</option>
-              {categoriesWithProducts.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="grid gap-2 sm:grid-cols-2 lg:flex lg:items-center">
+            <label className="min-h-11">
+              <span className="sr-only">Search products by name</span>
+              <input
+                className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-[#0e568f] lg:w-52"
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search product name"
+                type="search"
+                value={searchQuery}
+              />
+            </label>
+            <label className="min-h-11">
+              <span className="sr-only">Filter products by brand</span>
+              <select
+                className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-[#0e568f] lg:w-44"
+                onChange={(event) => setBrandName(event.target.value)}
+                value={brandName}
+              >
+                <option value="all">All brands</option>
+                {brands.map((brand) => (
+                  <option key={brand.id} value={brand.name}>
+                    {brand.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="min-h-11">
+              <span className="sr-only">Filter products by subcategory</span>
+              <select
+                className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-[#0e568f] lg:w-48"
+                onChange={(event) =>
+                  setCategoryId(event.target.value === "all" ? "all" : Number(event.target.value))
+                }
+                value={categoryId}
+              >
+                <option value="all">All subcategories</option>
+                {productCategories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           <button
             className="min-h-11 rounded-xl bg-[#f05a28] px-4 text-sm font-bold text-white transition hover:bg-[#d94d20]"
             onClick={() => setCreateOpen(true)}
@@ -153,9 +180,7 @@ export function AdminProductsPage({
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex gap-2">
-                      <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
-                        {product.isActive ? "Active" : "Draft"}
-                      </span>
+                      <ProductVisibilityToggle product={product} />
                       {product.isFeatured ? (
                         <span className="rounded-full bg-[#fff1ea] px-2.5 py-1 text-xs font-bold text-[#d94d20]">
                           Featured
@@ -170,8 +195,8 @@ export function AdminProductsPage({
               ))}
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td className="px-5 py-10 text-center text-slate-500" colSpan={7}>
-                    No products are assigned to this category yet.
+                  <td className="px-5 py-10 text-center text-slate-500" colSpan={6}>
+                    No products match these filters.
                   </td>
                 </tr>
               ) : null}
@@ -181,7 +206,11 @@ export function AdminProductsPage({
       </section>
       {createOpen ? (
         <CatalogModal close={() => setCreateOpen(false)} title="Create product">
-          <AddProductForm brands={brands} categories={productCategories} />
+          <AddProductForm
+            brands={brands}
+            categories={productCategories}
+            onSuccess={() => setCreateOpen(false)}
+          />
         </CatalogModal>
       ) : null}
       {viewProduct ? (
@@ -190,6 +219,50 @@ export function AdminProductsPage({
         </CatalogModal>
       ) : null}
     </div>
+  );
+}
+
+function ProductVisibilityToggle({ product }: { product: Product }): ReactElement {
+  const [state, action, pending] = useActionState<CreateProductActionState, FormData>(
+    updateProductVisibilityAction,
+    initialCreateProductActionState,
+  );
+  const nextVisibility = (!product.isActive).toString();
+
+  return (
+    <form action={action} className="flex flex-col items-start gap-1">
+      <input name="id" type="hidden" value={product.id} />
+      <input name="isActive" type="hidden" value={nextVisibility} />
+      <button
+        aria-checked={product.isActive}
+        aria-label={`${product.isActive ? "Hide" : "Show"} ${product.name} from the storefront`}
+        className={`inline-flex min-h-8 items-center gap-2 rounded-full px-2.5 py-1 text-xs font-bold transition disabled:cursor-wait disabled:opacity-60 ${
+          product.isActive
+            ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+        }`}
+        disabled={pending}
+        role="switch"
+        type="submit"
+      >
+        <span
+          aria-hidden="true"
+          className={`relative h-4 w-7 rounded-full ${product.isActive ? "bg-emerald-500" : "bg-slate-400"}`}
+        >
+          <span
+            className={`absolute top-0.5 size-3 rounded-full bg-white shadow transition-transform ${
+              product.isActive ? "translate-x-3.5" : "translate-x-0.5"
+            }`}
+          />
+        </span>
+        {product.isActive ? "Visible" : "Hidden"}
+      </button>
+      {state.status === "error" && state.message ? (
+        <span aria-live="polite" className="max-w-40 text-xs text-rose-700">
+          {state.message}
+        </span>
+      ) : null}
+    </form>
   );
 }
 

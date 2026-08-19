@@ -104,6 +104,17 @@ export async function deleteProductForAdmin(
   return { ok: true };
 }
 
+export async function updateProductVisibilityForAdmin(
+  repository: DemoStoreRepository,
+  actor: SessionUser | null,
+  id: string,
+  isActive: boolean,
+): Promise<CreateProductResult> {
+  if (!actor || actor.role !== "admin") return { ok: false, reason: "unauthorized" };
+  const product = await repository.updateProductVisibility(id, isActive);
+  return product ? { ok: true, product } : { ok: false, reason: "invalid-category" };
+}
+
 export async function createBrandForAdmin(
   repository: DemoStoreRepository,
   actor: SessionUser | null,
@@ -206,6 +217,10 @@ export async function listCatalogProducts(repository: DemoStoreRepository): Prom
   const products = await repository.listProducts();
 
   return [...products].sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+}
+
+export async function listStorefrontProducts(repository: DemoStoreRepository): Promise<Product[]> {
+  return (await listCatalogProducts(repository)).filter((product) => product.isActive);
 }
 
 export async function createCategoryForAdmin(
