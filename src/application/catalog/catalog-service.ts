@@ -21,7 +21,8 @@ export type CreateProductResult =
   | { ok: false; reason: "duplicate-sku" | "invalid-brand" | "invalid-category" | "unauthorized" };
 
 export type CreateCategoryResult =
-  { category: Category; ok: true } | { ok: false; reason: "duplicate-category" | "unauthorized" };
+  | { category: Category; ok: true }
+  | { ok: false; reason: "duplicate-category" | "invalid-parent" | "unauthorized" };
 
 type AdminMutationResult = { ok: true } | { ok: false; reason: string };
 
@@ -44,9 +45,7 @@ export async function createProductForAdmin(
   }
 
   const categories = await repository.listCategories();
-  const selectedCategory = categories.find((category) => category.id === input.categoryId);
-
-  if (!selectedCategory?.parentCategoryId) {
+  if (!isProductSubcategory(categories, input.categoryId)) {
     return { ok: false, reason: "invalid-category" };
   }
 
@@ -87,7 +86,7 @@ export async function updateProductForAdmin(
   )
     return { ok: false, reason: "duplicate-sku" };
   const categories = await repository.listCategories();
-  if (!categories.find((category) => category.id === input.categoryId)?.parentCategoryId)
+  if (!isProductSubcategory(categories, input.categoryId))
     return { ok: false, reason: "invalid-category" };
   if (!(await repository.listBrands()).some((brand) => brand.name === input.brand))
     return { ok: false, reason: "invalid-brand" };
@@ -166,13 +165,10 @@ export async function updateCategoryForAdmin(
   input: UpdateCategoryInput,
 ): Promise<AdminMutationResult> {
   if (!actor || actor.role !== "admin") return { ok: false, reason: "unauthorized" };
-  if (input.parentCategoryId === id) return { ok: false, reason: "self-parent" };
   const categories = await repository.listCategories();
-  const parentCategoryId = input.parentCategoryId;
-  if (
-    typeof parentCategoryId === "number" &&
-    createsCategoryCycle(categories, id, parentCategoryId)
-  ) {
+  const category = categories.find((item) => item.id === id);
+  if (!category) return { ok: false, reason: "missing" };
+  if (input.parentCategoryId !== category.parentCategoryId) {
     return { ok: false, reason: "invalid-parent" };
   }
   if (
@@ -185,24 +181,6 @@ export async function updateCategoryForAdmin(
   return (await repository.updateCategory(id, input))
     ? { ok: true }
     : { ok: false, reason: "missing" };
-}
-
-function createsCategoryCycle(
-  categories: Category[],
-  categoryId: number,
-  parentCategoryId: number,
-): boolean {
-  const categoriesById = new Map(categories.map((category) => [category.id, category]));
-  const visited = new Set<number>();
-  let currentParentId: number | null = parentCategoryId;
-
-  while (currentParentId !== null) {
-    if (currentParentId === categoryId || visited.has(currentParentId)) return true;
-    visited.add(currentParentId);
-    currentParentId = categoriesById.get(currentParentId)?.parentCategoryId ?? null;
-  }
-
-  return false;
 }
 
 export async function deleteCategoryForAdmin(
@@ -252,6 +230,14 @@ export async function createCategoryForAdmin(
     return { ok: false, reason: "duplicate-category" };
   }
 
+  if (
+    input.parentCategoryId !== null &&
+    input.parentCategoryId !== undefined &&
+    !isMainCategory(existingCategories, input.parentCategoryId)
+  ) {
+    return { ok: false, reason: "invalid-parent" };
+  }
+
   const category = await repository.addCategory({
     ...input,
     slug,
@@ -286,7 +272,20 @@ export async function listCatalogAssignableCategories(
 ): Promise<Category[]> {
   const categories = await repository.listCategories();
 
-  return categories.filter((category) => category.parentCategoryId !== null);
+  return categories.filter((category) => isProductSubcategory(categories, category.id));
+}
+
+function isMainCategory(categories: Category[], categoryId: number): boolean {
+  return categories.some(
+    (category) => category.id === categoryId && category.parentCategoryId === null,
+  );
+}
+
+function isProductSubcategory(categories: Category[], categoryId: number): boolean {
+  const category = categories.find((item) => item.id === categoryId);
+  return Boolean(
+    category?.parentCategoryId && isMainCategory(categories, category.parentCategoryId),
+  );
 }
 
 export async function listCatalogCategoryFields(

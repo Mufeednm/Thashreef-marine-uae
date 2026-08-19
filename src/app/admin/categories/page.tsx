@@ -1,9 +1,6 @@
 import { redirect } from "next/navigation";
 import type { ReactElement } from "react";
-import {
-  listCatalogCategories,
-  listCatalogCategoryFields,
-} from "@/application/catalog/catalog-service";
+import { listCatalogCategories } from "@/application/catalog/catalog-service";
 import { restoreSessionUser } from "@/application/auth/auth-service";
 import { AdminShell } from "@/features/admin/components/admin-shell";
 import { CategoryManager } from "@/features/catalog/components/category-manager";
@@ -18,10 +15,7 @@ export default async function AdminCategoriesRoute(): Promise<ReactElement> {
     redirect("/admin/login");
   }
 
-  const [categories, fields] = await Promise.all([
-    listCatalogCategories(repository),
-    listCatalogCategoryFields(repository),
-  ]);
+  const categories = await listCatalogCategories(repository);
 
   return (
     <AdminShell
@@ -29,7 +23,7 @@ export default async function AdminCategoriesRoute(): Promise<ReactElement> {
       eyebrow="Catalog"
       title="Categories"
     >
-      <CategoryManager categories={categories} fields={fields} />
+      <CategoryManager categories={categories} />
     </AdminShell>
   );
 }

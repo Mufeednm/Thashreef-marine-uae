@@ -24,8 +24,6 @@ export const initialCreateProductActionState: CreateProductActionState = {
 export interface CreateCategoryActionState {
   fieldErrors?: {
     bannerImageUrl?: string[];
-    customFields?: string[];
-    isFeatured?: string[];
     imageFile?: string[];
     name?: string[];
     nameAr?: string[];

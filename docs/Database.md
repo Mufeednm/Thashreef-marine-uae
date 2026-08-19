@@ -6,12 +6,12 @@ Planned entities: users, roles, permissions, addresses, categories, brands, prod
 
 ## Production catalog schema
 
-The runtime uses MySQL 8 through Sequelize. On first startup it creates the current schema and uses a versioned seed marker in `seed_meta` to replace the old demo catalog with a marine-only taxonomy once per seed version.
+The runtime uses MySQL 8 through Sequelize. On first startup it creates the current schema without adding sample data. Set `SEED_DEMO_DATA=true` only when an intentional demo-data seed is required.
 
 - `categories` is self-referencing via `parent_category_id`.
 - Main categories have `parent_category_id = NULL`.
-- Subcategories and child categories have a parent category.
-- Products must be assigned to a non-main category.
+- Subcategories can belong only to a main category; category nesting is limited to two levels.
+- Products must be assigned to a subcategory.
 - `brands` stores seeded brand records used by storefront brand rails.
 - `brands.image_url` stores an optional administrator-uploaded logo image; category images are stored in `categories.banner_image_url` and product images in `products.image_url`.
 - `products.category_id` points to the assigned subcategory/child category while product queries also expose the resolved main category for navigation filtering.

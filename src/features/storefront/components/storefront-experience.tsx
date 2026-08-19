@@ -35,15 +35,6 @@ interface HeroSlide {
   title: string;
 }
 
-interface CategoryTile {
-  description: string;
-  icon: ReactElement;
-  imageAlt: string;
-  imageUrl: string;
-  matcher: string;
-  title: string;
-}
-
 interface BrandTile {
   label: string;
   tone: string;
@@ -117,63 +108,6 @@ const heroSlides: HeroSlide[] = [
   },
 ];
 
-const categoryTiles: CategoryTile[] = [
-  {
-    description: "Life jackets, rings, rescue and visibility gear",
-    icon: <ShieldIcon />,
-    imageAlt: "Marine safety equipment and diving accessories",
-    imageUrl:
-      "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=900&q=82",
-    matcher: "life",
-    title: "Safety Gear",
-  },
-  {
-    description: "Anchors, ropes, shackles and mooring support",
-    icon: <AnchorIcon />,
-    imageAlt: "Ropes and anchor hardware near marina water",
-    imageUrl:
-      "https://images.unsplash.com/photo-1512100356356-de1b84283e18?auto=format&fit=crop&w=900&q=82",
-    matcher: "anchor",
-    title: "Anchoring",
-  },
-  {
-    description: "Navigation lights, batteries and electrical parts",
-    icon: <BoltIcon />,
-    imageAlt: "Navigation equipment and electrical controls",
-    imageUrl:
-      "https://images.unsplash.com/photo-1520942702018-0862200e6873?auto=format&fit=crop&w=900&q=82",
-    matcher: "navigation",
-    title: "Electrical",
-  },
-  {
-    description: "Fenders, ladders, fittings and deck accessories",
-    icon: <DeckIcon />,
-    imageAlt: "Deck hardware and dock accessories",
-    imageUrl:
-      "https://images.unsplash.com/photo-1539635278303-d4002c07eae3?auto=format&fit=crop&w=900&q=82",
-    matcher: "fender",
-    title: "Deck Hardware",
-  },
-  {
-    description: "Bilge pumps, hoses and plumbing essentials",
-    icon: <PumpIcon />,
-    imageAlt: "Marine maintenance hardware and tools",
-    imageUrl:
-      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=900&q=82",
-    matcher: "pump",
-    title: "Pumps & Plumbing",
-  },
-  {
-    description: "Brushes, cleaners and maintenance products",
-    icon: <SparkIcon />,
-    imageAlt: "Clean ocean water and maintenance context",
-    imageUrl:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=82",
-    matcher: "clean",
-    title: "Cleaning",
-  },
-];
-
 const brandTiles: BrandTile[] = [
   { label: "Lalizas", tone: "from-orange-500 to-amber-500" },
   { label: "Polyform", tone: "from-sky-600 to-cyan-500" },
@@ -221,10 +155,6 @@ export function StorefrontExperience({
     () => new Set(products.map((product) => product.categoryId)),
     [products],
   );
-  const navigationCategoryTree = useMemo(
-    () => pruneEmptyCategoryBranches(categoryTree, assignedCategoryIds),
-    [assignedCategoryIds, categoryTree],
-  );
   const categoryLookup = useMemo(
     () => new Map(flatCategories.map((category) => [category.id, category])),
     [flatCategories],
@@ -241,9 +171,15 @@ export function StorefrontExperience({
     return new Set(getDescendantCategoryIds(categoryLookup.get(selectedCategoryId)));
   }, [categoryLookup, selectedCategoryId]);
   const hasProductsInCategory = (categoryId: number): boolean =>
-    getDescendantCategoryIds(categoryLookup.get(categoryId)).some((id) => assignedCategoryIds.has(id));
+    getDescendantCategoryIds(categoryLookup.get(categoryId)).some((id) =>
+      assignedCategoryIds.has(id),
+    );
   const brandNames = useMemo(
-    () => (brands.length > 0 ? brands.map((brand) => brand.name) : Array.from(new Set(products.map((product) => product.brand)))).slice(0, 12),
+    () =>
+      (brands.length > 0
+        ? brands.map((brand) => brand.name)
+        : Array.from(new Set(products.map((product) => product.brand)))
+      ).slice(0, 12),
     [brands, products],
   );
   const filteredProducts = useMemo(() => {
@@ -259,20 +195,24 @@ export function StorefrontExperience({
           product.mainCategory?.toLowerCase().includes(normalizedQuery)),
     );
   }, [products, query, selectedCategoryIds]);
-  const homepageCategories = useMemo(
-    () => flatCategories.filter((category) => category.showOnHomepage).sort((a, b) => a.homepageOrder - b.homepageOrder),
-    [flatCategories],
-  );
   const bestSellers = useMemo(
     () =>
       products.some((product) => product.isTopSelling)
-        ? products.filter((product) => product.isTopSelling).sort((a, b) => a.homepageOrder - b.homepageOrder).slice(0, 10)
-        : [...products].sort((left, right) => left.homepageOrder - right.homepageOrder).slice(0, 10),
+        ? products
+            .filter((product) => product.isTopSelling)
+            .sort((a, b) => a.homepageOrder - b.homepageOrder)
+            .slice(0, 10)
+        : [...products]
+            .sort((left, right) => left.homepageOrder - right.homepageOrder)
+            .slice(0, 10),
     [products],
   );
   const newArrivals = useMemo(
     () =>
-      (products.some((product) => product.isNewArrival) ? products.filter((product) => product.isNewArrival) : [...products])
+      (products.some((product) => product.isNewArrival)
+        ? products.filter((product) => product.isNewArrival)
+        : [...products]
+      )
         .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
         .slice(0, 10),
     [products],
@@ -280,9 +220,7 @@ export function StorefrontExperience({
   const recentlyAdded = newArrivals.slice(0, 8);
   const recommendedProducts = useMemo(
     () =>
-      [...products]
-        .sort((left, right) => right.priceAedCents - left.priceAedCents)
-        .slice(0, 10),
+      [...products].sort((left, right) => right.priceAedCents - left.priceAedCents).slice(0, 10),
     [products],
   );
   const topBrandProducts = useMemo(() => {
@@ -308,7 +246,9 @@ export function StorefrontExperience({
   useEffect(() => {
     const timer = window.setTimeout(() => {
       try {
-        const savedCart = JSON.parse(window.sessionStorage.getItem("thashreef-cart") ?? "[]") as CartLine[];
+        const savedCart = JSON.parse(
+          window.sessionStorage.getItem("thashreef-cart") ?? "[]",
+        ) as CartLine[];
         setCart(Array.isArray(savedCart) ? savedCart : []);
       } catch {
         setCart([]);
@@ -346,10 +286,8 @@ export function StorefrontExperience({
   }
 
   function selectCategoryAndScroll(categoryId: number | "all"): void {
-    const nextCategoryId =
-      categoryId === "all" || hasProductsInCategory(categoryId) ? categoryId : "all";
     setQuery("");
-    setSelectedCategoryId(nextCategoryId);
+    setSelectedCategoryId(categoryId);
     document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -357,7 +295,9 @@ export function StorefrontExperience({
     setQuery(value);
     if (value.trim()) {
       setSelectedCategoryId("all");
-      window.requestAnimationFrame(() => document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+      window.requestAnimationFrame(() =>
+        document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      );
     }
   }
 
@@ -383,7 +323,7 @@ export function StorefrontExperience({
       <Header
         accountName={accountName}
         cartQuantity={cartQuantity}
-        categoryTree={navigationCategoryTree}
+        categoryTree={categoryTree}
         openCart={() => setCartOpen(true)}
         openLogin={() => setLoginOpen(true)}
         openMobileMenu={() => setMobileMenuOpen(true)}
@@ -408,22 +348,10 @@ export function StorefrontExperience({
 
         <BrandLogoCarousel brands={brands} />
 
-        <CategoryCarousel selectDepartment={selectDepartment} />
-
-        {homepageCategories.map((category) => {
-          const ids = new Set(getDescendantCategoryIds(category));
-          const categoryProducts = products.filter((product) => ids.has(product.categoryId)).slice(0, 6);
-          return categoryProducts.length ? (
-            <ProductCarousel
-              addToCart={addToCart}
-              eyebrow="Shop category"
-              key={category.id}
-              products={categoryProducts}
-              subtitle={`Selected marine equipment from ${category.name}.`}
-              title={category.name}
-            />
-          ) : null;
-        })}
+        <CategoryCarousel
+          categories={categoryTree.filter((category) => category.showOnHomepage)}
+          selectCategory={selectCategoryAndScroll}
+        />
 
         <ProductCarousel
           addToCart={addToCart}
@@ -481,8 +409,8 @@ export function StorefrontExperience({
                   Browse all marine accessories
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                  {filteredProducts.length} products available for {selectedCategoryName.toLowerCase()}.
-                  Search by brand, category or product name.
+                  {filteredProducts.length} products available for{" "}
+                  {selectedCategoryName.toLowerCase()}. Search by brand, category or product name.
                 </p>
               </div>
               <div className="flex max-w-4xl flex-wrap gap-2">
@@ -501,19 +429,19 @@ export function StorefrontExperience({
                   .filter((category) => category.depth > 0 && hasProductsInCategory(category.id))
                   .slice(0, 12)
                   .map((category) => (
-                  <button
-                    className={`min-h-11 rounded-full px-4 text-xs font-black transition ${
-                      selectedCategoryId === category.id
-                        ? "bg-[#0a2540] text-white shadow-lg shadow-slate-900/10"
-                        : "border border-slate-200 bg-white text-slate-700 hover:border-[#0e7490] hover:text-[#0e7490]"
-                    }`}
-                    key={category.id}
-                    onClick={() => selectCategoryAndScroll(category.id)}
-                    type="button"
-                  >
-                    {category.name}
-                  </button>
-                ))}
+                    <button
+                      className={`min-h-11 rounded-full px-4 text-xs font-black transition ${
+                        selectedCategoryId === category.id
+                          ? "bg-[#0a2540] text-white shadow-lg shadow-slate-900/10"
+                          : "border border-slate-200 bg-white text-slate-700 hover:border-[#0e7490] hover:text-[#0e7490]"
+                      }`}
+                      key={category.id}
+                      onClick={() => selectCategoryAndScroll(category.id)}
+                      type="button"
+                    >
+                      {category.name}
+                    </button>
+                  ))}
               </div>
             </div>
             {filteredProducts.length > 0 ? (
@@ -530,8 +458,16 @@ export function StorefrontExperience({
             ) : (
               <div className="mt-7 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
                 <p className="font-bold text-[#0a2540]">No products match this selection yet.</p>
-                <p className="mt-2 text-sm text-slate-500">Choose All products or select another category to continue browsing.</p>
-                <button className="mt-5 min-h-11 rounded-full bg-[#0a2540] px-5 text-sm font-bold text-white" onClick={() => selectCategoryAndScroll("all")} type="button">Show all products</button>
+                <p className="mt-2 text-sm text-slate-500">
+                  Choose All products or select another category to continue browsing.
+                </p>
+                <button
+                  className="mt-5 min-h-11 rounded-full bg-[#0a2540] px-5 text-sm font-bold text-white"
+                  onClick={() => selectCategoryAndScroll("all")}
+                  type="button"
+                >
+                  Show all products
+                </button>
               </div>
             )}
           </div>
@@ -545,7 +481,7 @@ export function StorefrontExperience({
       <a
         aria-label="Contact Marsa Edge Marine LLC on WhatsApp"
         className="fixed bottom-5 left-5 z-20 grid size-14 place-items-center rounded-full border-2 border-white bg-[#25d366] text-white shadow-xl shadow-emerald-950/25 transition hover:-translate-y-0.5 hover:bg-[#1ebe57] focus:outline-none focus:ring-4 focus:ring-[#25d366]/35 sm:bottom-6 sm:left-6"
-        href="https://wa.me/971500000000"
+        href="https://wa.me/971527035250"
         rel="noreferrer"
         target="_blank"
       >
@@ -555,7 +491,7 @@ export function StorefrontExperience({
         {mobileMenuOpen ? (
           <MobileMenu
             accountName={accountName}
-            categoryTree={navigationCategoryTree}
+            categoryTree={categoryTree}
             close={() => setMobileMenuOpen(false)}
             openLogin={() => setLoginOpen(true)}
             selectedCategoryId={selectedCategoryId}
@@ -599,17 +535,6 @@ function getDescendantCategoryIds(category?: CategoryTreeNode): number[] {
   ];
 }
 
-function pruneEmptyCategoryBranches(
-  categories: CategoryTreeNode[],
-  assignedCategoryIds: Set<number>,
-): CategoryTreeNode[] {
-  return categories.flatMap((category) => {
-    const children = pruneEmptyCategoryBranches(category.children, assignedCategoryIds);
-    if (!assignedCategoryIds.has(category.id) && children.length === 0) return [];
-    return [{ ...category, children }];
-  });
-}
-
 function Header({
   accountName,
   cartQuantity,
@@ -645,8 +570,20 @@ function Header({
         >
           <MenuIcon />
         </button>
-        <Link aria-label="Marsa Edge Marine LLC home" className="relative flex h-11 w-20 shrink-0 items-center overflow-hidden rounded-xl bg-white sm:h-12 sm:w-28" href="/">
-          <Image alt="Marsa Edge Marine LLC" className="absolute -top-8 left-1/2 h-auto w-[184px] max-w-none -translate-x-1/2" height={1728} priority src="/brand/marsa-edge-logo-source.png" unoptimized width={1728} />
+        <Link
+          aria-label="Marsa Edge Marine LLC home"
+          className="relative flex h-11 w-20 shrink-0 items-center overflow-hidden rounded-xl bg-white sm:h-12 sm:w-28"
+          href="/"
+        >
+          <Image
+            alt="Marsa Edge Marine LLC"
+            className="absolute -top-8 left-1/2 h-auto w-[184px] max-w-none -translate-x-1/2"
+            height={1728}
+            priority
+            src="/brand/marsa-edge-logo-source.png"
+            unoptimized
+            width={1728}
+          />
         </Link>
         <label className="relative hidden min-h-12 min-w-0 flex-1 items-center rounded-full border border-slate-200 bg-slate-50 px-4 transition focus-within:border-[#0e7490] focus-within:bg-white focus-within:shadow-sm sm:flex">
           <SearchIcon />
@@ -691,7 +628,13 @@ function Header({
           ) : null}
         </button>
       </div>
-      <div className="hidden xl:block"><CategoryNavigation categories={categoryTree} selectedCategoryId={selectedCategoryId} selectCategory={selectCategory} /></div>
+      <div className="hidden xl:block">
+        <CategoryNavigation
+          categories={categoryTree}
+          selectedCategoryId={selectedCategoryId}
+          selectCategory={selectCategory}
+        />
+      </div>
     </header>
   );
 }
@@ -783,89 +726,129 @@ function HeroShowcase({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-black">New in store</p>
-                <p className="mt-1 text-xs text-slate-300">Latest additions to the marine catalogue.</p>
+                <p className="mt-1 text-xs text-slate-300">
+                  Latest additions to the marine catalogue.
+                </p>
               </div>
-              <span className="rounded-full bg-[#f97316] px-3 py-1 text-[10px] font-black">JUST ADDED</span>
+              <span className="rounded-full bg-[#f97316] px-3 py-1 text-[10px] font-black">
+                JUST ADDED
+              </span>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3">
               {products.slice(0, 2).map((product) => (
-                <article className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.07]" key={product.id}>
-                  <Link aria-label={`View ${product.name}`} className="block" href={`/products/${product.slug}`}>
+                <article
+                  className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.07]"
+                  key={product.id}
+                >
+                  <Link
+                    aria-label={`View ${product.name}`}
+                    className="block"
+                    href={`/products/${product.slug}`}
+                  >
                     <div className="relative aspect-[16/10] bg-white">
-                      <Image alt={product.name} className="object-contain p-2" fill sizes="180px" src={product.imageUrl} unoptimized={product.imageUrl.startsWith("/")} />
+                      <Image
+                        alt={product.name}
+                        className="object-contain p-2"
+                        fill
+                        sizes="180px"
+                        src={product.imageUrl}
+                        unoptimized={product.imageUrl.startsWith("/")}
+                      />
                     </div>
                     <div className="px-3 pt-2">
                       <p className="truncate text-xs font-bold text-white">{product.name}</p>
-                      <p className="mt-1 text-xs font-black text-cyan-100">{formatAedFromCents(product.priceAedCents)}</p>
+                      <p className="mt-1 text-xs font-black text-cyan-100">
+                        {formatAedFromCents(product.priceAedCents)}
+                      </p>
                     </div>
                   </Link>
-                  <button className="m-3 mt-2 min-h-11 w-[calc(100%-1.5rem)] rounded-lg border border-white/15 bg-white/10 px-2 text-xs font-bold text-white transition hover:bg-[#f97316]" onClick={() => addToCart(product)} type="button">Add to cart</button>
+                  <button
+                    className="m-3 mt-2 min-h-11 w-[calc(100%-1.5rem)] rounded-lg border border-white/15 bg-white/10 px-2 text-xs font-bold text-white transition hover:bg-[#f97316]"
+                    onClick={() => addToCart(product)}
+                    type="button"
+                  >
+                    Add to cart
+                  </button>
                 </article>
               ))}
             </div>
           </div>
         </div>
-          <div className="absolute bottom-6 left-6 hidden items-center gap-2 rounded-full border border-white/10 bg-slate-950/35 p-2 backdrop-blur lg:flex">
-            {Array.from({ length: slideCount }, (_, index) => index).map((index) => (
-              <button
-                aria-label={`Show slide ${index + 1}`}
-                className={`h-2.5 rounded-full transition-all ${
-                  activeSlide === index ? "w-9 bg-[#f97316]" : "w-2.5 bg-white/45 hover:bg-white/75"
-                }`}
-                key={index}
-                onClick={() => setActiveSlide(index)}
-                type="button"
-              />
-            ))}
-          </div>
+        <div className="absolute bottom-6 left-6 hidden items-center gap-2 rounded-full border border-white/10 bg-slate-950/35 p-2 backdrop-blur lg:flex">
+          {Array.from({ length: slideCount }, (_, index) => index).map((index) => (
+            <button
+              aria-label={`Show slide ${index + 1}`}
+              className={`h-2.5 rounded-full transition-all ${
+                activeSlide === index ? "w-9 bg-[#f97316]" : "w-2.5 bg-white/45 hover:bg-white/75"
+              }`}
+              key={index}
+              onClick={() => setActiveSlide(index)}
+              type="button"
+            />
+          ))}
+        </div>
       </div>
     </section>
   );
 }
 
 function CategoryCarousel({
-  selectDepartment,
+  categories,
+  selectCategory,
 }: {
-  selectDepartment: (matcher: string) => void;
+  categories: CategoryTreeNode[];
+  selectCategory: (categoryId: number) => void;
 }): ReactElement {
   return (
     <section className="mx-auto max-w-[1480px] px-4 py-12 sm:px-6">
       <SectionHeader
         eyebrow="Shop by category"
-        subtitle="Browse the essential equipment your crew, boat, or workshop needs."
-        title="Find the right marine equipment faster"
+        subtitle="Browse the categories you manage in the catalogue. Each category leads to products in its subcategories."
+        title="Find the right products faster"
       />
       <div className="mt-7 flex snap-x gap-5 overflow-x-auto pb-4 [scrollbar-width:none]">
-        {categoryTiles.map((category) => (
+        {categories.map((category) => (
           <motion.button
             className="group relative h-64 w-[290px] shrink-0 snap-start overflow-hidden rounded-[1.75rem] bg-slate-900 text-left shadow-lg shadow-slate-900/10"
-            key={category.title}
-            onClick={() => selectDepartment(category.matcher)}
+            key={category.id}
+            onClick={() => selectCategory(category.id)}
             type="button"
             whileHover={{ y: -5 }}
             whileTap={{ scale: 0.98 }}
           >
-            <Image
-              alt={category.imageAlt}
-              className="object-cover transition duration-500 group-hover:scale-105"
-              fill
-              sizes="290px"
-              src={category.imageUrl}
-            />
+            {category.bannerImageUrl ? (
+              <Image
+                alt={category.name}
+                className="object-cover transition duration-500 group-hover:scale-105"
+                fill
+                sizes="290px"
+                src={category.bannerImageUrl}
+                unoptimized={category.bannerImageUrl.startsWith("/")}
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-[#0e568f] to-[#071827]" />
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/88 via-slate-950/25 to-transparent" />
-            <div className="absolute left-5 top-5 grid size-12 place-items-center rounded-2xl bg-white/15 text-white backdrop-blur">
-              {category.icon}
-            </div>
             <div className="absolute inset-x-0 bottom-0 p-5 text-white">
-              <p className="text-xl font-black">{category.title}</p>
-              <p className="mt-1 text-sm leading-5 text-slate-200">{category.description}</p>
+              <p className="text-xl font-black">{category.name}</p>
+              {category.nameAr ? (
+                <p className="mt-1 text-sm text-slate-200" dir="rtl">
+                  {category.nameAr}
+                </p>
+              ) : null}
               <span className="mt-4 inline-flex rounded-full bg-white/15 px-3 py-1 text-xs font-black backdrop-blur">
-                Explore
+                View products
               </span>
             </div>
           </motion.button>
         ))}
       </div>
+      {categories.length === 0 ? (
+        <p className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-600">
+          Categories appear here only when Show in Shop by category is selected in the admin
+          catalogue.
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -894,11 +877,7 @@ function ProductCarousel({
               key={product.id}
               whileHover={{ y: -5 }}
             >
-              <ProductCard
-                addToCart={addToCart}
-                index={index}
-                product={product}
-              />
+              <ProductCard addToCart={addToCart} index={index} product={product} />
             </motion.div>
           ))}
         </div>
@@ -957,8 +936,13 @@ function ProductCard({
 }): ReactElement {
   const { locale } = useLocale();
   const name = locale === "ar" && product.nameAr ? product.nameAr : product.name;
-  const description = locale === "ar" && product.descriptionAr ? product.descriptionAr : product.description;
-  const galleryCount = [product.imageUrl, product.secondaryImageUrl, product.tertiaryImageUrl].filter(Boolean).length;
+  const description =
+    locale === "ar" && product.descriptionAr ? product.descriptionAr : product.description;
+  const galleryCount = [
+    product.imageUrl,
+    product.secondaryImageUrl,
+    product.tertiaryImageUrl,
+  ].filter(Boolean).length;
   const tones = [
     "from-sky-100 to-blue-50",
     "from-orange-100 to-amber-50",
@@ -985,16 +969,18 @@ function ProductCard({
         <div className="absolute left-4 top-4 rounded-full bg-[#0a2540] px-3 py-1 text-[10px] font-black text-white shadow-sm">
           {product.category}
         </div>
-        {galleryCount > 1 ? <div className="absolute bottom-4 right-4 rounded-full bg-white/95 px-3 py-1 text-[10px] font-black text-[#0a2540] shadow-sm">{galleryCount} photos</div> : null}
+        {galleryCount > 1 ? (
+          <div className="absolute bottom-4 right-4 rounded-full bg-white/95 px-3 py-1 text-[10px] font-black text-[#0a2540] shadow-sm">
+            {galleryCount} photos
+          </div>
+        ) : null}
       </Link>
       <div className="p-4">
         <p className="text-xs font-black tracking-[0.16em] text-slate-400 uppercase">
           {product.brand}
         </p>
         <p className="mt-2 min-h-10 text-sm font-black leading-5 text-[#0a2540]">{name}</p>
-        <p className="mt-2 line-clamp-2 min-h-10 text-xs leading-5 text-slate-500">
-          {description}
-        </p>
+        <p className="mt-2 line-clamp-2 min-h-10 text-xs leading-5 text-slate-500">{description}</p>
         <div className="mt-4 flex items-end justify-between gap-2">
           <div>
             <span className="text-lg font-black text-[#0a2540]">
@@ -1036,8 +1022,27 @@ function BrandLogoCarousel({ brands }: { brands: Brand[] }): ReactElement {
             href={`/brands/${brand.slug}`}
             key={brand.id}
           >
-            {brand.imageUrl ? <span className="relative grid h-20 w-40 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-white"><Image alt={`${brand.name} logo`} className="object-contain p-2" fill sizes="160px" src={brand.imageUrl} unoptimized={brand.imageUrl.startsWith("/")} /></span> : <span className={`grid h-20 w-40 place-items-center rounded-xl bg-gradient-to-br ${brandTiles[index % brandTiles.length].tone} text-base font-black text-white`}>{brand.name.slice(0, 2).toUpperCase()}</span>}
-            <span className="mt-2 text-sm font-black text-[#0a2540]">{locale === "ar" && brand.nameAr ? brand.nameAr : brand.name}</span>
+            {brand.imageUrl ? (
+              <span className="relative grid h-20 w-40 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-white">
+                <Image
+                  alt={`${brand.name} logo`}
+                  className="object-contain p-2"
+                  fill
+                  sizes="160px"
+                  src={brand.imageUrl}
+                  unoptimized={brand.imageUrl.startsWith("/")}
+                />
+              </span>
+            ) : (
+              <span
+                className={`grid h-20 w-40 place-items-center rounded-xl bg-gradient-to-br ${brandTiles[index % brandTiles.length].tone} text-base font-black text-white`}
+              >
+                {brand.name.slice(0, 2).toUpperCase()}
+              </span>
+            )}
+            <span className="mt-2 text-sm font-black text-[#0a2540]">
+              {locale === "ar" && brand.nameAr ? brand.nameAr : brand.name}
+            </span>
           </Link>
         ))}
       </div>
@@ -1184,11 +1189,24 @@ function CartDrawer({
             <span>Subtotal</span>
             <span>{formatAedFromCents(total)}</span>
           </div>
-          <p className="mt-2 text-xs text-slate-500">Shipping and quote options are calculated later.</p>
+          <p className="mt-2 text-xs text-slate-500">
+            Shipping and quote options are calculated later.
+          </p>
           {cart.length === 0 ? (
-            <button className="mt-5 min-h-12 w-full rounded-full bg-slate-300 text-sm font-black text-white" disabled type="button">Proceed to checkout</button>
+            <button
+              className="mt-5 min-h-12 w-full rounded-full bg-slate-300 text-sm font-black text-white"
+              disabled
+              type="button"
+            >
+              Proceed to checkout
+            </button>
           ) : (
-            <Link className="mt-5 flex min-h-12 w-full items-center justify-center rounded-full bg-[#f97316] text-sm font-black text-white transition hover:bg-[#c2410c]" href="/checkout">Proceed to checkout</Link>
+            <Link
+              className="mt-5 flex min-h-12 w-full items-center justify-center rounded-full bg-[#f97316] text-sm font-black text-white transition hover:bg-[#c2410c]"
+              href="/checkout"
+            >
+              Proceed to checkout
+            </Link>
           )}
         </div>
       </motion.div>
@@ -1356,7 +1374,9 @@ function MobileMenu({
         <div className="mt-5 grid gap-3">
           <button
             className={`min-h-12 rounded-2xl px-4 text-left text-sm font-black ${
-              selectedCategoryId === "all" ? "bg-[#0a2540] text-white" : "bg-slate-50 text-slate-700"
+              selectedCategoryId === "all"
+                ? "bg-[#0a2540] text-white"
+                : "bg-slate-50 text-slate-700"
             }`}
             onClick={() => {
               selectCategory("all");
@@ -1370,36 +1390,47 @@ function MobileMenu({
             <div className="rounded-2xl bg-slate-50 p-3" key={category.id}>
               <button
                 className={`min-h-11 w-full rounded-xl px-3 text-left text-sm font-black ${
-                  selectedCategoryId === category.id
-                    ? "bg-[#0a2540] text-white"
-                    : "text-[#0a2540]"
+                  selectedCategoryId === category.id ? "bg-[#0a2540] text-white" : "text-[#0a2540]"
                 }`}
                 aria-expanded={expandedCategoryId === category.id}
-                onClick={() => setExpandedCategoryId((current) => current === category.id ? null : category.id)}
+                onClick={() =>
+                  setExpandedCategoryId((current) => (current === category.id ? null : category.id))
+                }
                 type="button"
               >
                 {category.name}
               </button>
-              {expandedCategoryId === category.id ? <div className="mt-2 grid gap-1">
-                <button className="min-h-10 rounded-xl px-3 text-left text-xs font-black text-[#0e7490]" onClick={() => { selectCategory(category.id); close(); }} type="button">View all {category.name}</button>
-                {category.children.map((subcategory) => (
+              {expandedCategoryId === category.id ? (
+                <div className="mt-2 grid gap-1">
                   <button
-                    className={`min-h-10 rounded-xl px-3 text-left text-xs font-bold ${
-                      selectedCategoryId === subcategory.id
-                        ? "bg-white text-[#0e7490] shadow-sm"
-                        : "text-slate-600"
-                    }`}
-                    key={subcategory.id}
+                    className="min-h-10 rounded-xl px-3 text-left text-xs font-black text-[#0e7490]"
                     onClick={() => {
-                      selectCategory(subcategory.id);
+                      selectCategory(category.id);
                       close();
                     }}
                     type="button"
                   >
-                    {subcategory.name}
+                    View all {category.name}
                   </button>
-                ))}
-              </div> : null}
+                  {category.children.map((subcategory) => (
+                    <button
+                      className={`min-h-10 rounded-xl px-3 text-left text-xs font-bold ${
+                        selectedCategoryId === subcategory.id
+                          ? "bg-white text-[#0e7490] shadow-sm"
+                          : "text-slate-600"
+                      }`}
+                      key={subcategory.id}
+                      onClick={() => {
+                        selectCategory(subcategory.id);
+                        close();
+                      }}
+                      type="button"
+                    >
+                      {subcategory.name}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
           ))}
         </div>
@@ -1452,8 +1483,35 @@ function Footer(): ReactElement {
             ))}
           </div>
         </div>
-        <FooterLinks heading="Shop" links={["Safety Gear", "Anchoring", "Electrical", "Cleaning"]} />
-        <div><p className="text-sm font-extrabold text-white">Support</p><ul className="mt-3 space-y-2 text-sm"><li><a className="hover:text-white" href="#catalog">Contact</a></li><li><a className="hover:text-white" href="#catalog">Quick Quote</a></li><li><a className="hover:text-white" href="#catalog">Shipping</a></li><li><Link className="hover:text-white" href="/return-refund">Return &amp; Refund</Link></li></ul></div>
+        <FooterLinks
+          heading="Shop"
+          links={["Safety Gear", "Anchoring", "Electrical", "Cleaning"]}
+        />
+        <div>
+          <p className="text-sm font-extrabold text-white">Support</p>
+          <ul className="mt-3 space-y-2 text-sm">
+            <li>
+              <a className="hover:text-white" href="#catalog">
+                Contact
+              </a>
+            </li>
+            <li>
+              <a className="hover:text-white" href="#catalog">
+                Quick Quote
+              </a>
+            </li>
+            <li>
+              <a className="hover:text-white" href="#catalog">
+                Shipping
+              </a>
+            </li>
+            <li>
+              <Link className="hover:text-white" href="/return-refund">
+                Return &amp; Refund
+              </Link>
+            </li>
+          </ul>
+        </div>
         <div>
           <p className="text-sm font-extrabold text-white">Service desk</p>
           <p className="mt-3 text-sm font-semibold text-white">Marsa Edge Marine</p>
@@ -1485,7 +1543,14 @@ function FooterLinks({ heading, links }: { heading: string; links: string[] }): 
 
 function SearchIcon(): ReactElement {
   return (
-    <svg aria-hidden="true" className="size-5 text-slate-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <svg
+      aria-hidden="true"
+      className="size-5 text-slate-400"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+    >
       <circle cx="11" cy="11" r="6" />
       <path d="m16 16 4 4" />
     </svg>
@@ -1494,7 +1559,14 @@ function SearchIcon(): ReactElement {
 
 function CartIcon(): ReactElement {
   return (
-    <svg aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <svg
+      aria-hidden="true"
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+    >
       <path d="M3 4h2l2 11h10l2-8H7" />
       <circle cx="9" cy="20" r="1" />
       <circle cx="17" cy="20" r="1" />
@@ -1504,7 +1576,14 @@ function CartIcon(): ReactElement {
 
 function MenuIcon(): ReactElement {
   return (
-    <svg aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <svg
+      aria-hidden="true"
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+    >
       <path d="M4 7h16M4 12h16M4 17h16" />
     </svg>
   );
@@ -1512,7 +1591,14 @@ function MenuIcon(): ReactElement {
 
 function CloseIcon(): ReactElement {
   return (
-    <svg aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <svg
+      aria-hidden="true"
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+    >
       <path d="m6 6 12 12M18 6 6 18" />
     </svg>
   );
@@ -1520,58 +1606,30 @@ function CloseIcon(): ReactElement {
 
 function ShieldIcon(): ReactElement {
   return (
-    <svg aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <svg
+      aria-hidden="true"
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+    >
       <path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Z" />
       <path d="m9 12 2 2 4-5" />
     </svg>
   );
 }
 
-function AnchorIcon(): ReactElement {
-  return (
-    <svg aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-      <circle cx="12" cy="5" r="2" />
-      <path d="M12 7v12M5 12h14M7 17c1.5 2 3 3 5 3s3.5-1 5-3M5 15v-3h3M19 15v-3h-3" />
-    </svg>
-  );
-}
-
-function BoltIcon(): ReactElement {
-  return (
-    <svg aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-      <path d="m13 2-8 12h6l-1 8 9-13h-6l1-7Z" />
-    </svg>
-  );
-}
-
-function DeckIcon(): ReactElement {
-  return (
-    <svg aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-      <path d="M4 17h16M6 13h12M8 9h8M10 5h4M5 21h14" />
-    </svg>
-  );
-}
-
-function PumpIcon(): ReactElement {
-  return (
-    <svg aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-      <path d="M7 15h8a4 4 0 0 0 0-8H9v4" />
-      <path d="M4 19h14M7 11v8M15 11h5v4h-5" />
-    </svg>
-  );
-}
-
-function SparkIcon(): ReactElement {
-  return (
-    <svg aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-      <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l3 3M15 15l3 3M18 6l-3 3M9 15l-3 3" />
-    </svg>
-  );
-}
-
 function TruckIcon(): ReactElement {
   return (
-    <svg aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <svg
+      aria-hidden="true"
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+    >
       <path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z" />
       <circle cx="7" cy="19" r="2" />
       <circle cx="18" cy="19" r="2" />
@@ -1581,7 +1639,14 @@ function TruckIcon(): ReactElement {
 
 function BriefcaseIcon(): ReactElement {
   return (
-    <svg aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <svg
+      aria-hidden="true"
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+    >
       <path d="M9 6V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1M4 7h16v12H4zM4 12h16" />
     </svg>
   );
@@ -1589,7 +1654,14 @@ function BriefcaseIcon(): ReactElement {
 
 function LockIcon(): ReactElement {
   return (
-    <svg aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <svg
+      aria-hidden="true"
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+    >
       <rect x="5" y="10" width="14" height="10" rx="2" />
       <path d="M8 10V7a4 4 0 0 1 8 0v3" />
     </svg>

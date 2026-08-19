@@ -25,6 +25,7 @@ import type {
 } from "@/domain/demo-store/demo-store-repository";
 import { getDatabaseConnection } from "@/infrastructure/database/sequelize";
 import { initializeMySqlSchema } from "@/infrastructure/database/mysql-schema";
+import { getServerEnvironment } from "@/config/env";
 import { hashPassword } from "@/shared/security/password-hash";
 import {
   marineBrands,
@@ -88,11 +89,12 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     const category = await getDatabaseConnection().query<{
       id: number;
       name: string;
-      parentCategoryId: number | null;
+      mainCategoryId: number | null;
     }>(
-      `SELECT id, name, parent_category_id AS parentCategoryId
-       FROM categories
-       WHERE id = :id
+      `SELECT child.id, child.name, parent.id AS mainCategoryId
+       FROM categories child
+       INNER JOIN categories parent ON parent.id = child.parent_category_id
+       WHERE child.id = :id AND parent.parent_category_id IS NULL
        LIMIT 1`,
       { replacements: { id: input.categoryId }, type: QueryTypes.SELECT },
     );
@@ -100,8 +102,8 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     if (!category[0]) {
       throw new Error(`Unknown category id: ${input.categoryId}`);
     }
-    if (!category[0].parentCategoryId) {
-      throw new Error("Products must be assigned to a subcategory or child category.");
+    if (!category[0]) {
+      throw new Error("Products must be assigned to a subcategory.");
     }
 
     const effectivePrice = input.salePriceAedCents ?? input.regularPriceAedCents;
@@ -172,11 +174,14 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
   async updateProduct(id: string, input: CreateProductInput): Promise<Product | null> {
     await ensureDatabase();
     const database = getDatabaseConnection();
-    const [category] = await database.query<{ name: string; parentCategoryId: number | null }>(
-      "SELECT name, parent_category_id AS parentCategoryId FROM categories WHERE id = :id LIMIT 1",
+    const [category] = await database.query<{ name: string }>(
+      `SELECT child.name FROM categories child
+       INNER JOIN categories parent ON parent.id = child.parent_category_id
+       WHERE child.id = :id AND parent.parent_category_id IS NULL
+       LIMIT 1`,
       { replacements: { id: input.categoryId }, type: QueryTypes.SELECT },
     );
-    if (!category?.parentCategoryId) return null;
+    if (!category) return null;
 
     await database.query(
       `UPDATE products SET
@@ -859,10 +864,14 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     });
   }
 
-  async getOrderDetail(id: number): Promise<import("@/domain/demo-store/demo-store-repository").AdminOrderDetail | null> {
+  async getOrderDetail(
+    id: number,
+  ): Promise<import("@/domain/demo-store/demo-store-repository").AdminOrderDetail | null> {
     await ensureDatabase();
     const database = getDatabaseConnection();
-    const [order] = await database.query<import("@/domain/demo-store/demo-store-repository").AdminOrderDetail>(
+    const [order] = await database.query<
+      import("@/domain/demo-store/demo-store-repository").AdminOrderDetail
+    >(
       `SELECT o.id, COALESCE(cp.name, 'Guest customer') AS customerName, COALESCE(cp.email, '') AS customerEmail,
         cp.phone AS customerPhone, o.order_date AS orderDate, o.status, o.total_aed_cents AS totalAedCents,
         o.payment_method AS paymentMethod, o.shipping_zone AS shippingZone, o.delivery_address AS deliveryAddress
@@ -870,7 +879,9 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
       { replacements: { id }, type: QueryTypes.SELECT },
     );
     if (!order) return null;
-    const items = await database.query<import("@/domain/demo-store/demo-store-repository").AdminOrderDetail["items"][number]>(
+    const items = await database.query<
+      import("@/domain/demo-store/demo-store-repository").AdminOrderDetail["items"][number]
+    >(
       `SELECT id, product_name AS name, quantity, unit_price_aed_cents AS unitPriceAedCents,
         line_total_aed_cents AS lineTotalAedCents FROM order_items WHERE order_id = :id ORDER BY id`,
       { replacements: { id }, type: QueryTypes.SELECT },
@@ -887,9 +898,24 @@ async function ensureDatabase(): Promise<void> {
 async function initializeDatabase(): Promise<void> {
   const database = getDatabaseConnection();
   await initializeMySqlSchema(database);
-  await seedHomepageBanners();
-  await syncAuthUsers();
-  await syncMarineCatalogSeed();
+  await normalizeCategoryHierarchy(database);
+  if (getServerEnvironment().SEED_DEMO_DATA) {
+    await seedHomepageBanners();
+    await syncAuthUsers();
+    await syncMarineCatalogSeed();
+  }
+}
+
+async function normalizeCategoryHierarchy(
+  database: ReturnType<typeof getDatabaseConnection>,
+): Promise<void> {
+  await database.query(
+    `UPDATE categories child
+     INNER JOIN categories parent ON parent.id = child.parent_category_id
+     INNER JOIN categories main ON main.id = parent.parent_category_id
+     SET child.parent_category_id = main.id
+     WHERE main.parent_category_id IS NULL`,
+  );
 }
 
 async function seedHomepageBanners(): Promise<void> {
@@ -957,12 +983,26 @@ function isDuplicateEntryError(error: unknown): boolean {
 async function syncMarineCatalogSeed(): Promise<void> {
   const database = getDatabaseConnection();
 
-  const [currentVersion] = await database.query<{ value: string }>(
-    "SELECT value FROM seed_meta WHERE `key` = 'marine_catalog_version' LIMIT 1",
-    { type: QueryTypes.SELECT },
-  );
+  const [currentVersion, catalogCounts] = await Promise.all([
+    database.query<{ value: string }>(
+      "SELECT value FROM seed_meta WHERE `key` = 'marine_catalog_version' LIMIT 1",
+      { type: QueryTypes.SELECT },
+    ),
+    database.query<{ brands: number; categories: number; products: number }>(
+      `SELECT
+         (SELECT COUNT(*) FROM brands) AS brands,
+         (SELECT COUNT(*) FROM categories) AS categories,
+         (SELECT COUNT(*) FROM products) AS products`,
+      { type: QueryTypes.SELECT },
+    ),
+  ]);
 
-  if (currentVersion?.value === marineCatalogSeedVersion) {
+  const catalogWasFullyCleared =
+    Number(catalogCounts[0]?.brands ?? 0) === 0 &&
+    Number(catalogCounts[0]?.categories ?? 0) === 0 &&
+    Number(catalogCounts[0]?.products ?? 0) === 0;
+
+  if (currentVersion[0]?.value === marineCatalogSeedVersion && !catalogWasFullyCleared) {
     return;
   }
 

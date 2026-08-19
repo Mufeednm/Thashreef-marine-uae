@@ -18,6 +18,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
   title: { default: "Marsa Edge Marine LLC", template: "%s | Marsa Edge Marine LLC" },
   description: "Marine spare parts and solutions from Marsa Edge Marine LLC.",
+  icons: {
+    apple: "/brand/marsa-edge-favicon.png",
+    icon: "/brand/marsa-edge-favicon.png",
+    shortcut: "/brand/marsa-edge-favicon.png",
+  },
   robots: { index: true, follow: true },
 };
 

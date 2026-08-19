@@ -435,13 +435,11 @@ export async function updateCategoryAction(
 ): Promise<CreateCategoryActionState> {
   const id = catalogRecordIdSchema.safeParse(formData.get("id"));
   const parsed = createCategorySchema.safeParse({
-    bannerImageUrl: formData.get("bannerImageUrl"),
-    isFeatured: formData.get("isFeatured"),
-    homepageOrder: formData.get("homepageOrder"),
-    showOnHomepage: formData.get("showOnHomepage"),
+    bannerImageUrl: formData.get("bannerImageUrl") ?? "",
     name: formData.get("name"),
     nameAr: formData.get("nameAr"),
     parentCategoryId: formData.get("parentCategoryId"),
+    showOnHomepage: formData.get("showOnHomepage"),
   });
   const parsedImage = catalogImageSchema.safeParse({ imageFile: formData.get("imageFile") });
   if (!id.success || !parsed.success || !parsedImage.success)
@@ -452,16 +450,21 @@ export async function updateCategoryAction(
   );
   if (!existingCategory) return { message: "This category could not be found.", status: "error" };
   const result = await updateCategoryForAdmin(repository, adminUser, id.data, {
-    ...parsed.data,
     bannerImageUrl:
       (await persistCatalogImage(parsedImage.data.imageFile, "categories")) ??
-      parsed.data.bannerImageUrl,
+      existingCategory.bannerImageUrl,
     displayOrder: existingCategory.displayOrder,
+    isFeatured: existingCategory.isFeatured,
+    homepageOrder: 0,
+    name: parsed.data.name,
+    nameAr: parsed.data.nameAr,
+    parentCategoryId: parsed.data.parentCategoryId,
+    showOnHomepage: parsed.data.showOnHomepage,
   });
   if (!result.ok) {
     const message =
-      result.reason === "invalid-parent" || result.reason === "self-parent"
-        ? "A category cannot be placed under itself or one of its own child categories."
+      result.reason === "invalid-parent"
+        ? "Category type and parent cannot be changed after creation."
         : result.reason === "duplicate"
           ? "A category with that name already exists."
           : "This category could not be updated.";
@@ -497,13 +500,10 @@ export async function createCategoryAction(
 ): Promise<CreateCategoryActionState> {
   const parsedCategory = createCategorySchema.safeParse({
     bannerImageUrl: "",
-    customFields: formData.get("customFields"),
-    isFeatured: formData.get("isFeatured"),
-    homepageOrder: formData.get("homepageOrder"),
-    showOnHomepage: formData.get("showOnHomepage"),
     name: formData.get("name"),
     nameAr: formData.get("nameAr"),
     parentCategoryId: formData.get("parentCategoryId"),
+    showOnHomepage: formData.get("showOnHomepage"),
   });
   const parsedImage = catalogImageSchema.safeParse({ imageFile: formData.get("imageFile") });
 
@@ -538,9 +538,9 @@ export async function createCategoryAction(
   const result = await createCategoryForAdmin(repository, adminUser, {
     bannerImageUrl: (await persistCatalogImage(parsedImage.data.imageFile, "categories")) ?? null,
     displayOrder: 0,
-    fieldLabels: parsedCategory.data.customFields,
-    isFeatured: parsedCategory.data.isFeatured,
-    homepageOrder: parsedCategory.data.homepageOrder,
+    fieldLabels: [],
+    isFeatured: false,
+    homepageOrder: 0,
     showOnHomepage: parsedCategory.data.showOnHomepage,
     name: parsedCategory.data.name,
     nameAr: parsedCategory.data.nameAr,
@@ -552,7 +552,9 @@ export async function createCategoryAction(
       message:
         result.reason === "duplicate-category"
           ? "A category with that name already exists."
-          : "Only the local admin account can create categories.",
+          : result.reason === "invalid-parent"
+            ? "Select a main category before creating a subcategory."
+            : "Only the local admin account can create categories.",
       status: "error",
     };
   }
@@ -564,7 +566,7 @@ export async function createCategoryAction(
   revalidatePath("/admin/products/new");
 
   return {
-    message: `${result.category.name} category is ready with ${parsedCategory.data.customFields.length} custom fields.`,
+    message: `${result.category.name} category is ready.`,
     status: "success",
   };
 }

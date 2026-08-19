@@ -1,5 +1,23 @@
 # Decision Log
 
+## 2026-08-19 - Marsa Edge browser-tab icon
+
+- **Decision:** Use a square Marsa Edge ship-wheel and compass logo asset for the browser tab, bookmarks, and Apple touch icon.
+- **Reason:** The default Next.js favicon does not identify the business in a browser tab.
+- **Impact:** Storefront metadata now consistently points to the Marsa Edge icon without changing the full wordmark used in the page header.
+
+## 2026-08-19 - Storefront WhatsApp destination
+
+- **Decision:** Connect the persistent storefront WhatsApp action to the requested UAE number, 0527035250.
+- **Reason:** Customer enquiries must reach the current business contact rather than the previous placeholder number.
+- **Impact:** The action opens a WhatsApp chat using the internationally formatted number `971527035250`.
+
+## 2026-08-19 - Reliable storefront subcategory navigation
+
+- **Decision:** Render the hovered or selected main category's direct subcategories in a compact dropdown below that category button, using a portal above the page layers.
+- **Reason:** The original flyout was present in the page markup but could be hidden by surrounding layout layers, while a full-width second row is too visually heavy for normal browsing.
+- **Impact:** Hovering exposes a small dropdown containing only direct subcategories below its category; clicking pins it open for touch users. The portal keeps it visible above the hero and other storefront content.
+
 ## 2026-08-16 - Administrator username sign-in compatibility
 
 - **Decision:** Accept either a username or email address at sign-in while continuing to use email-only customer registration.
@@ -360,6 +378,72 @@ Render's Node 24 build image selected a prebuilt `sqlite3` binary requiring GLIB
 - **Decision:** Replace the flat/demo catalog seed with a versioned marine-only taxonomy: main categories, subcategories, optional child categories, brands, and products assigned only to non-main categories.
 - **Reason:** A professional marine accessories store needs scalable navigation, database-backed mega menus, and product assignment rules that prevent products from sitting directly under broad departments like Safety or Electrical.
 - **Impact:** SQLite now seeds 12 main categories, 76 category records, 12 brands, and 58 products. The storefront navbar loads main categories from the database and the hover mega menu lists related subcategories dynamically.
+
+## 2026-08-19 - Strict main-category and subcategory workflow
+
+- **Decision:** Limit the catalogue to two levels: main category and subcategory. Administrators create a main category first, then create its subcategories from that main category; products can only be assigned to a subcategory.
+- **Reason:** The customer navigation has a single submenu level. Allowing further nesting made products difficult to discover and produced categories that the menu could not display.
+- **Impact:** The UI preserves English and Arabic names for both levels, server-side validation prevents crafted third-level records and invalid product assignments, and legacy deeper records are re-parented to their main category during initialization.
+
+## 2026-08-19 - Remove category featured flag from administration
+
+- **Decision:** Remove the Featured category toggle from category creation and editing.
+- **Reason:** It has no distinct customer-facing behaviour and makes the category form harder to understand.
+- **Impact:** Existing stored values are retained for compatibility, but new categories default to false and administrators only control whether a category appears on the homepage.
+
+## 2026-08-19 - Database-backed Shop by category cards
+
+- **Decision:** Render the storefront Shop by category cards from main categories in the database, using their uploaded category images.
+- **Reason:** Hard-coded category names and stock images diverged from the categories an administrator manages.
+- **Impact:** Selecting a main category filters the catalogue to all products assigned to its subcategories; an empty catalogue shows an explanatory empty state instead of static cards.
+
+## 2026-08-19 - Disable automatic demo seeding
+
+- **Decision:** Do not create demo users, brands, categories, products, or homepage banners when the application starts.
+- **Reason:** The local database is being used for real catalogue setup, not a demo, and automatic seed records reappeared after a reset.
+- **Impact:** Schema initialization remains automatic, while seed data requires the explicit `SEED_DEMO_DATA=true` environment setting.
+
+## 2026-08-19 - Remove category custom fields from administration
+
+- **Decision:** Remove custom-field creation and display from the category administration workflow.
+- **Reason:** Product specifications do not yet consume those fields, so showing them while creating a subcategory is confusing and provides no customer-facing value.
+- **Impact:** Administrators now create only the category structure and image. Existing database field records remain untouched for compatibility but are no longer shown or created.
+
+## 2026-08-19 - Always show taxonomy in navigation
+
+- **Decision:** Display every main category and its subcategories in customer navigation, whether or not products have been assigned yet.
+- **Reason:** Administrators need to confirm newly created category structure immediately. Product-dependent filtering concealed correct new records and made the setup appear broken.
+- **Impact:** The navbar and mobile category menu now reflect the database taxonomy immediately. The category admin table shows only main categories, with a modal for each category's subcategory management.
+
+## 2026-08-19 - Separate navigation from Shop by category placement
+
+- **Decision:** Show all categories in navigation by default, and use the category placement checkbox only for main-category cards in Shop by category.
+- **Reason:** Navigation represents the complete catalogue structure, while Shop by category is a curated homepage section and needs an explicit administrator choice.
+- **Impact:** The checkbox is hidden for subcategories, renamed to Show in Shop by category for main categories, and no longer affects navbar visibility.
+
+## 2026-08-19 - Keep Shop by category cards flat
+
+- **Decision:** Do not display a subcategory count on Shop by category cards.
+- **Reason:** The cards should introduce main categories only; the navbar hover menu is the dedicated place to explore their subcategories.
+- **Impact:** Homepage category cards now show only the selected main category and its product link.
+
+## 2026-08-19 - Open subcategories on main-category click
+
+- **Decision:** A main category with children opens its dropdown on click as well as hover.
+- **Reason:** Selecting the main category previously closed the dropdown immediately, which made the expected subcategory list appear missing.
+- **Impact:** Customers can use hover, click, or keyboard to open the submenu, then choose a subcategory or View all for the main category.
+
+## 2026-08-19 - Persist the active subcategory dropdown
+
+- **Decision:** Keep a selected main category's dropdown visible until another navigation choice is made.
+- **Reason:** The active styling without a visible submenu was confusing and made it look as though subcategories were missing.
+- **Impact:** After selecting a main category, its subcategories remain visibly available directly below the navbar item.
+
+## 2026-08-19 - Prevent category-menu clipping
+
+- **Decision:** Use a wrapping desktop category navigation row instead of a horizontal-scroll container.
+- **Reason:** The scroll container clipped the absolutely positioned submenu, leaving it in the DOM but invisible on screen.
+- **Impact:** Navbar subcategory menus can extend below the category row and remain visible for hover or click selection.
 
 ## 2026-07-14 - Functional reference website
 

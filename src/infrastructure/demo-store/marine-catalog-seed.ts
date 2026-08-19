@@ -7,7 +7,6 @@ export interface MarineSeedBrand {
   name: string;
   slug: string;
 }
-
 export interface MarineSeedCategory {
   bannerImageUrl: string | null;
   displayOrder: number;
@@ -71,7 +70,7 @@ export const marineCategories: MarineSeedCategory[] = [
   subCategory(303, "Compasses", "compasses", 300, 30),
   subCategory(304, "Navigation Lights", "navigation-lights", 300, 40),
   subCategory(305, "Marine Electronics", "marine-electronics", 300, 50),
-  childCategory(306, "AIS & Radar", "ais-radar", 305, 10),
+  subCategory(306, "AIS & Radar", "ais-radar", 300, 60),
 
   mainCategory(400, "Deck Hardware", "deck-hardware", 40),
   subCategory(401, "Cleats", "cleats", 400, 10),
@@ -234,24 +233,6 @@ function subCategory(
     displayOrder,
     id,
     isFeatured: displayOrder <= 20,
-    name,
-    parentCategoryId,
-    slug,
-  };
-}
-
-function childCategory(
-  id: number,
-  name: string,
-  slug: string,
-  parentCategoryId: number,
-  displayOrder: number,
-): MarineSeedCategory {
-  return {
-    bannerImageUrl: null,
-    displayOrder,
-    id,
-    isFeatured: false,
     name,
     parentCategoryId,
     slug,

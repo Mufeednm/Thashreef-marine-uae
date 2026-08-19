@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Replace the browser-tab icon with a square Marsa Edge Marine mark.
+- Point the storefront WhatsApp contact button to the requested UAE number, 0527035250.
+- Use a compact, click-pinned subcategory-only dropdown directly below the hovered main category. It is rendered above page layers so it cannot be hidden by the storefront hero.
+- Remove subcategory counts from Shop by category cards; subcategories are exposed only through the navigation menu.
+- Make the category visibility checkbox control only the storefront Shop by category cards. The navbar always displays the full category structure.
+- Show every administrator-created main category and subcategory in the storefront navigation immediately, even before products are assigned.
+- Simplify category administration to a main-category table; selecting a main category now opens a dedicated modal to list, add, edit, and delete its subcategories.
+- Remove the unused custom-fields input and custom-field displays from category and subcategory administration.
+- Disable automatic dummy users, catalogue records, and homepage banners. The database now starts empty unless `SEED_DEMO_DATA=true` is explicitly configured.
+- Allow category creation and edits when Show on homepage is unchecked; the unchecked value now correctly saves as hidden instead of failing form validation.
+- Replace the storefront Shop by category static cards and stock images with main categories and uploaded category images from the database; selecting a category shows products from its subcategories.
+- Remove the unused Featured category option from the administrator category workflow while preserving existing stored values.
+- Enforce a two-level category taxonomy: administrators create main categories, then add subcategories from the corresponding main-category row; products can only be assigned to those subcategories.
+- Preserve English and Arabic category names in the main-category and subcategory workflows, repair legacy nested category records into the two-level hierarchy at startup, and fix category edits that previously failed when no new image was supplied.
+- Restore the built-in catalogue only when all three catalogue tables have been cleared while the seed marker remains, avoiding a blank local storefront after a partial local reset.
 - Restore username-or-email sign-in so the seeded administrator can use `admin` with its configured password.
 - Keep customer and checkout sign-in email-only while the protected administrator screen uses a username field.
 - Prevent category-parent loops, require email-and-password sign-in, and send order confirmation emails through configured SMTP.
