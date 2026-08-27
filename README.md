@@ -18,9 +18,18 @@ The administrator account is seeded for local development, but credentials are i
 
 To send real order-request confirmations, configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_FROM` in `.env.local`. The checkout saves the order even if SMTP is not configured or delivery fails, and only reports an email as sent after the mail server accepts it.
 
+### Customer email OTP
+
+Customer registration and sign-in use a six-digit email verification code; `/admin/login` remains username-and-password only. The same SMTP variables above are required for OTP delivery. Each code expires after 10 minutes, can be attempted five times, and a new code may be requested once per minute. Configure the SMTP account with a sender address on `marsaedgemarine.ae`, and add matching SPF/DKIM DNS records before enabling production traffic.
+
+### Contact Us email
+
+The `/contact` form uses the same SMTP settings and sends each enquiry to `SMTP_FROM`; the visitor's address is used as the reply-to address. WhatsApp remains available as a fallback when email delivery is unavailable.
+
 ## Prerequisites
 
 Use Node.js 22 LTS (or later supported LTS) and MySQL 8. Copy `.env.example` to `.env.local` and supply local database credentials.
+For a default WAMP/XAMPP MySQL setup, use `DB_HOST=127.0.0.1`, `DB_PORT=3306`, `DB_USER=root`, and an intentionally empty `DB_PASSWORD=` value.
 
 ## Quality checks
 

@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Save each signed-in customer's validated phone and delivery details in their current browser when they continue through checkout, then prefill them on the next checkout.
+- Add Stripe test-mode hosted card checkout with server-calculated product totals, protected customer sessions, pending/paid payment states, secure return verification, and a signed webhook route for final payment confirmation and email delivery.
+- Keep incomplete Stripe card-payment attempts out of the customer My Orders page; complete a server-verified successful Stripe return immediately so local testing shows a paid order and sends its confirmation email even before a public webhook is configured.
+- Add a dedicated Contact Us page and improve the storefront footer with direct WhatsApp, phone, email, Instagram, address, and support links.
+- Send Contact Us form enquiries to the configured sales mailbox through SMTP, with WhatsApp as the delivery fallback.
+- Replace the footer Contact our team button with accessible WhatsApp and Instagram icon links.
+- Add customer-only My Orders pages with recent order status, items, totals, and delivery details; add a direct My orders link after sign-in.
+- Require mobile and complete delivery details before checkout can proceed, harden server-side checkout validation, and clarify order-confirmation emails that further updates are coming soon.
+- Redesign the Return & Refund page to match the storefront and use the shared footer; remove the duplicate Instagram text link from the footer contact column.
+- Redesign `/account` as a customer profile page with account details, navigation, order metrics, and cleaner recent-order cards.
+- Save a product-image snapshot with each new order and show it beside the product in My Orders; earlier orders use the current matching catalogue image when available, otherwise a placeholder.
+- Remove the unused subcategory image requirement; only main categories now collect category imagery for customer-facing cards.
+- Show each main category's uploaded image as a thumbnail in the admin Categories table.
+- Permit an intentionally empty `DB_PASSWORD` value for the common local WAMP/XAMPP root-account setup while continuing to require the environment variable.
+- Replace customer email/password authentication with secure six-digit email OTP registration and sign-in. Keep `/admin/login` username/password-only, persist hashed OTP challenges with a 10-minute expiry, five-attempt limit, and one-minute resend cooldown, and send OTPs through the configured SMTP service.
 - Store administrator-uploaded catalogue images in a configured persistent directory and serve them through a validated `/uploads/*` route, preventing Git deployments from deleting future product, brand, and category images.
 - Close administrator create modals automatically after a successful product, brand, main-category, or subcategory save so the refreshed table is immediately visible.
 - Add an administrator-only Security page that verifies the current password before securely replacing it with a new password.

@@ -1,21 +1,30 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({
-  identifier: z.string().trim().min(1, { error: "Enter your username or email address." }).max(254),
+  identifier: z.string().trim().min(1, { error: "Enter your username." }).max(254),
   password: z.string().trim().min(8, { error: "Password must be at least 8 characters long." }),
 });
 
-export const registrationSchema = z.object({
-  countryCode: z.enum(["+971", "+966", "+968", "+974", "+965", "+973", "+91", "+92"], {
-    error: "Choose a country code.",
-  }),
-  email: z.string().trim().email({ error: "Enter a valid email address." }).max(254),
-  name: z.string().trim().min(2, { error: "Enter your full name." }).max(120),
-  password: z.string().min(8, { error: "Use at least 8 characters for your password." }).max(128),
-  phone: z
+export const customerOtpRequestSchema = z
+  .object({
+    email: z.string().trim().email({ error: "Enter a valid email address." }).max(254),
+    name: z.string().trim().max(120),
+    purpose: z.enum(["login", "registration"]),
+  })
+  .superRefine((values, context) => {
+    if (values.purpose === "registration" && values.name.length < 2) {
+      context.addIssue({ code: "custom", message: "Enter your full name.", path: ["name"] });
+    }
+  });
+
+export const customerOtpVerificationSchema = z.object({
+  code: z
     .string()
     .trim()
-    .regex(/^\d{6,14}$/, { error: "Enter 6–14 digits without the country code." }),
+    .regex(/^\d{6}$/, { error: "Enter the 6-digit code." }),
+  email: z.string().trim().email({ error: "Enter a valid email address." }).max(254),
+  name: z.string().trim().max(120),
+  purpose: z.enum(["login", "registration"]),
 });
 
 export const changeAdminPasswordSchema = z

@@ -596,14 +596,22 @@ function Header({
           />
         </label>
         {accountName ? (
-          <form action={logoutAction}>
-            <button
-              className="hidden min-h-11 rounded-full border border-slate-200 px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-100 sm:block"
-              type="submit"
+          <div className="hidden items-center gap-2 sm:flex">
+            <Link
+              className="inline-flex min-h-11 items-center rounded-full border border-slate-200 px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
+              href="/account"
             >
-              {t("header.logout")}
-            </button>
-          </form>
+              My account
+            </Link>
+            <form action={logoutAction}>
+              <button
+                className="min-h-11 rounded-full border border-slate-200 px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
+                type="submit"
+              >
+                {t("header.logout")}
+              </button>
+            </form>
+          </div>
         ) : (
           <button
             className="hidden min-h-11 rounded-full border border-slate-200 px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-100 sm:block"
@@ -1436,14 +1444,23 @@ function MobileMenu({
         </div>
         <div className="mt-6 border-t border-slate-100 pt-5">
           {accountName ? (
-            <form action={logoutAction}>
-              <button
-                className="min-h-12 w-full rounded-full bg-[#0a2540] text-sm font-black text-white"
-                type="submit"
+            <div className="grid gap-3">
+              <Link
+                className="inline-flex min-h-12 items-center justify-center rounded-full border border-slate-200 text-sm font-black text-[#0a2540]"
+                href="/account"
+                onClick={close}
               >
-                Logout
-              </button>
-            </form>
+                My account
+              </Link>
+              <form action={logoutAction}>
+                <button
+                  className="min-h-12 w-full rounded-full bg-[#0a2540] text-sm font-black text-white"
+                  type="submit"
+                >
+                  Logout
+                </button>
+              </form>
+            </div>
           ) : (
             <button
               onClick={() => {
@@ -1462,25 +1479,35 @@ function MobileMenu({
   );
 }
 
-function Footer(): ReactElement {
+export function Footer(): ReactElement {
   return (
-    <footer className="bg-[#071827] px-4 py-12 text-slate-300 sm:px-6">
-      <div className="mx-auto grid max-w-[1480px] gap-8 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+    <footer className="bg-[#071827] px-4 py-12 text-slate-300 sm:px-6 lg:py-14">
+      <div className="mx-auto grid max-w-[1480px] gap-9 sm:grid-cols-2 lg:grid-cols-[1.25fr_0.8fr_0.9fr_1.1fr]">
         <div>
-          <p className="text-lg font-black text-white">MARSA EDGE MARINE LLC</p>
+          <p className="text-lg font-black tracking-tight text-white">MARSA EDGE MARINE LLC</p>
           <p className="mt-3 max-w-sm text-sm leading-6">
             Premium marine accessories, spare parts and equipment for UAE customers, workshops,
             retail buyers and vessel service teams.
           </p>
-          <div className="mt-5 flex gap-2">
-            {brandTiles.slice(0, 4).map((brand) => (
-              <span
-                className={`grid size-9 place-items-center rounded-xl bg-gradient-to-br ${brand.tone} text-[10px] font-black text-white`}
-                key={brand.label}
-              >
-                {brand.label.slice(0, 2).toUpperCase()}
-              </span>
-            ))}
+          <div className="mt-6 flex items-center gap-3">
+            <a
+              aria-label="Chat with Marsa Edge Marine on WhatsApp"
+              className="inline-flex size-11 items-center justify-center rounded-full bg-[#25d366] text-white transition hover:bg-[#1ebe57] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              href="https://wa.me/971527035250"
+              rel="noreferrer"
+              target="_blank"
+            >
+              <FooterWhatsAppIcon />
+            </a>
+            <a
+              aria-label="Follow Marsa Edge Marine on Instagram"
+              className="inline-flex size-11 items-center justify-center rounded-full border border-white/20 text-white transition hover:border-cyan-200 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              href="https://www.instagram.com/marsaedgemarine?igsi=MXJ5YjlxaXY0YW91ag=="
+              rel="noreferrer"
+              target="_blank"
+            >
+              <InstagramIcon />
+            </a>
           </div>
         </div>
         <FooterLinks
@@ -1491,19 +1518,24 @@ function Footer(): ReactElement {
           <p className="text-sm font-extrabold text-white">Support</p>
           <ul className="mt-3 space-y-2 text-sm">
             <li>
-              <a className="hover:text-white" href="#catalog">
-                Contact
+              <Link className="hover:text-white" href="/contact">
+                Contact us
+              </Link>
+            </li>
+            <li>
+              <a
+                className="hover:text-white"
+                href="https://wa.me/971527035250"
+                rel="noreferrer"
+                target="_blank"
+              >
+                Quick quote on WhatsApp
               </a>
             </li>
             <li>
-              <a className="hover:text-white" href="#catalog">
-                Quick Quote
-              </a>
-            </li>
-            <li>
-              <a className="hover:text-white" href="#catalog">
-                Shipping
-              </a>
+              <Link className="hover:text-white" href="/contact">
+                Shipping &amp; order help
+              </Link>
             </li>
             <li>
               <Link className="hover:text-white" href="/return-refund">
@@ -1513,12 +1545,28 @@ function Footer(): ReactElement {
           </ul>
         </div>
         <div>
-          <p className="text-sm font-extrabold text-white">Service desk</p>
-          <p className="mt-3 text-sm font-semibold text-white">Marsa Edge Marine</p>
-          <p className="mt-1 text-sm">Dubai</p>
-          <p className="mt-1 text-sm">Al Jaddaf</p>
-          <p className="mt-1 text-sm">Drydocks</p>
+          <p className="text-sm font-extrabold text-white">Get in touch</p>
+          <a
+            className="mt-3 block text-sm font-semibold text-white hover:text-cyan-200"
+            href="tel:+971527035250"
+          >
+            +971 52 703 5250
+          </a>
+          <a className="mt-2 block text-sm hover:text-white" href="mailto:sales@marsaedgemarine.ae">
+            sales@marsaedgemarine.ae
+          </a>
+          <p className="mt-3 text-sm leading-6">
+            Al Jaddaf Drydocks
+            <br />
+            Dubai, United Arab Emirates
+          </p>
         </div>
+      </div>
+      <div className="mx-auto mt-10 flex max-w-[1480px] flex-col gap-2 border-t border-white/10 pt-6 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+        <span>© {new Date().getFullYear()} Marsa Edge Marine LLC. All rights reserved.</span>
+        <Link className="hover:text-white" href="/return-refund">
+          Return &amp; Refund Policy
+        </Link>
       </div>
     </footer>
   );
@@ -1538,6 +1586,34 @@ function FooterLinks({ heading, links }: { heading: string; links: string[] }): 
         ))}
       </ul>
     </div>
+  );
+}
+
+function FooterWhatsAppIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M19.05 4.95A9.88 9.88 0 0 0 12.04 2C6.58 2 2.15 6.42 2.15 11.88c0 1.75.46 3.46 1.33 4.96L2.05 22l5.3-1.39a9.91 9.91 0 0 0 4.69 1.18h.01c5.46 0 9.89-4.42 9.89-9.88a9.82 9.82 0 0 0-2.89-6.96Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M8.35 7.27c.2-.45.41-.46.6-.47h.51c.16 0 .38.06.49.33l.85 2.03c.1.25.06.42-.04.58l-.36.48c-.12.13-.24.28-.1.53.14.24.62 1.02 1.33 1.65.92.81 1.7 1.06 1.94 1.18.24.12.38.1.52-.06l.67-.77c.16-.18.32-.15.54-.08l2.08.98c.26.13.43.19.5.3.07.11.07.65-.15 1.27-.22.62-1.27 1.18-1.74 1.25-.45.07-1.03.1-1.66-.1-.38-.12-.86-.28-1.49-.55-2.62-1.14-4.33-3.81-4.46-3.99-.13-.18-1.07-1.42-1.07-2.71 0-1.28.67-1.91.91-2.17Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+function InstagramIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24">
+      <rect height="15" rx="4" stroke="currentColor" strokeWidth="1.8" width="15" x="4.5" y="4.5" />
+      <circle cx="12" cy="12" r="3.5" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="16.9" cy="7.3" fill="currentColor" r="1" />
+    </svg>
   );
 }
 

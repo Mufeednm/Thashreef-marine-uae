@@ -1,5 +1,47 @@
 # Decision Log
 
+## 2026-08-27 - Saved customer checkout details
+
+- **Decision:** Save validated phone and delivery values locally for the signed-in customer's email after they continue through checkout, then prefill them on their next visit using the same browser.
+- **Reason:** Repeat customers should not need to type the same delivery information for every order.
+- **Impact:** The stored values are scoped by customer email, validated before use, and remain editable at checkout. They are saved only in the customer's current browser rather than shared with another device.
+
+## 2026-08-27 - Stripe-hosted checkout for card payments
+
+- **Decision:** Use Stripe Checkout for the card-payment experience, keeping Cash on Delivery available as a separate checkout choice.
+- **Reason:** Stripe hosts the collection of card details, so the application does not handle card numbers and can rely on Stripe's authentication and payment confirmation flow.
+- **Impact:** The server recalculates every price and creates a pending order before redirecting to Stripe. Pending or cancelled card attempts are hidden from the customer, while a server-verified successful return completes the local test and a verified Stripe webhook remains the production-safe confirmation path. Test keys remain in a local ignored environment file; live keys and the live webhook are a separate production step.
+
+## 2026-08-27 - Product image snapshots in customer orders
+
+- **Decision:** Save the product image URL with each order item and show it in the customer My Orders page.
+- **Reason:** The customer needs to recognise a purchased marine product quickly, even if its catalogue image later changes.
+- **Impact:** New orders retain their own image reference. Existing historical orders use a current catalogue image when their product name still matches, otherwise they safely show a neutral placeholder.
+
+## 2026-08-27 - Main-category-only imagery
+
+- **Decision:** Only main categories collect and retain a customer-facing category image; subcategories are text-only navigation and product-filter choices.
+- **Reason:** Subcategory images are not shown to customers, so requesting one makes administration slower and more confusing.
+- **Impact:** New subcategories save without an image while main-category Shop by category cards retain their existing visual treatment.
+
+## 2026-08-27 - Customer order visibility and validated delivery
+
+- **Decision:** Give signed-in customers a protected My Orders page, where they can see only their own recent order requests, item details, delivery address, totals, and fulfilment status.
+- **Reason:** Customers need a trustworthy place to check an order after it has been placed, without exposing another customer’s data.
+- **Impact:** The checkout confirmation links directly to My Orders. Client and server validation both block incomplete delivery details, and confirmation emails clearly say that further updates will follow.
+
+## 2026-08-27 - Direct marine-support contact experience
+
+- **Decision:** Add a dedicated Contact Us page with a validated SMTP email form, and turn the storefront footer into a direct support hub with WhatsApp, telephone, email, address, Instagram, and customer-help links.
+- **Reason:** Buyers need an immediate way to request part identification, quotes, and order help without searching the product catalogue.
+- **Impact:** The footer’s Contact, Quick Quote, and Shipping support paths are actionable. Contact-form messages are delivered to the configured sales mailbox with the customer as Reply-To, while WhatsApp provides a direct fallback if mail delivery is unavailable.
+
+## 2026-08-26 - Email OTP customer authentication
+
+- **Decision:** Use a six-digit email OTP as the only customer registration and sign-in credential, while preserving username-and-password authentication exclusively for the administrator route.
+- **Reason:** Customer passwords are no longer required in the requested experience, whereas the protected administrator workspace must retain its established credential-based access.
+- **Impact:** Customer accounts are created only after a verified email code. OTPs are salted and hashed, expire after 10 minutes, allow five attempts, and have a one-minute resend cooldown. SMTP must be configured before the customer flow can send codes.
+
 ## 2026-08-20 - Administrator password and product publication controls
 
 - **Decision:** Provide a dedicated admin-only Security page that requires the current password and a confirmed replacement password. Use a per-product Visible/Hidden switch in the admin table and filter inactive products at the public catalogue-service boundary.

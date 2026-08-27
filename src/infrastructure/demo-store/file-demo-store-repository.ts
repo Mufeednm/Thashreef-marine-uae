@@ -5,6 +5,7 @@ import path from "node:path";
 import { QueryTypes, type Transaction } from "sequelize";
 import { z } from "zod";
 import type { DemoUser } from "@/domain/auth/user";
+import { verifyOneTimeCode } from "@/shared/security/one-time-code";
 import type { Category } from "@/domain/catalog/category";
 import type { CategoryField } from "@/domain/catalog/category-field";
 import type { CreateProductInput, Product } from "@/domain/catalog/product";
@@ -19,6 +20,8 @@ import type {
   CreateCustomerInput,
   CreateOrderInput,
   DemoStoreRepository,
+  EmailOtpPurpose,
+  EmailOtpVerificationResult,
   HomepageBanner,
   PersistedCategoryInput,
   PersistedProductInput,
@@ -460,11 +463,14 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
           { replacements: { email }, transaction, type: QueryTypes.SELECT },
         );
         if (existing) return null;
-        const [existingPhone] = await database.query<{ id: number }>(
-          "SELECT id FROM customer_profiles WHERE phone = :phone LIMIT 1",
-          { replacements: { phone: input.phone.trim() }, transaction, type: QueryTypes.SELECT },
-        );
-        if (existingPhone) return null;
+        const phone = input.phone?.trim() || null;
+        if (phone) {
+          const [existingPhone] = await database.query<{ id: number }>(
+            "SELECT id FROM customer_profiles WHERE phone = :phone LIMIT 1",
+            { replacements: { phone }, transaction, type: QueryTypes.SELECT },
+          );
+          if (existingPhone) return null;
+        }
 
         await database.query(
           `INSERT INTO users (id, name, username, email, password, role)
@@ -478,7 +484,7 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
             replacements: {
               name,
               email,
-              phone: input.phone.trim(),
+              phone,
               dateJoined: new Date().toISOString(),
             },
             transaction,
@@ -490,6 +496,82 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
       if (isDuplicateEntryError(error)) return null;
       throw error;
     }
+  }
+
+  async createEmailOtpChallenge(input: {
+    codeHash: string;
+    email: string;
+    expiresAt: string;
+    purpose: EmailOtpPurpose;
+  }): Promise<{ id: string; status: "cooldown" | "created" }> {
+    await ensureDatabase();
+    const database = getDatabaseConnection();
+    const email = input.email.trim().toLowerCase();
+    const now = new Date();
+    const id = randomUUID();
+    return database.transaction(async (transaction: Transaction) => {
+      const [latest] = await database.query<{ createdAt: string }>(
+        `SELECT created_at AS createdAt FROM email_otp_challenges
+         WHERE lower(email) = lower(:email) AND purpose = :purpose
+         ORDER BY created_at DESC LIMIT 1 FOR UPDATE`,
+        { replacements: { email, purpose: input.purpose }, transaction, type: QueryTypes.SELECT },
+      );
+      if (latest && now.getTime() - new Date(latest.createdAt).getTime() < 60_000) {
+        return { id, status: "cooldown" };
+      }
+      await database.query(
+        `INSERT INTO email_otp_challenges (id, email, purpose, code_hash, expires_at, created_at)
+         VALUES (:id, :email, :purpose, :codeHash, :expiresAt, :createdAt)`,
+        { replacements: { ...input, createdAt: now.toISOString(), email, id }, transaction },
+      );
+      return { id, status: "created" };
+    });
+  }
+
+  async deleteEmailOtpChallenge(id: string): Promise<void> {
+    await ensureDatabase();
+    await getDatabaseConnection().query("DELETE FROM email_otp_challenges WHERE id = :id", {
+      replacements: { id },
+    });
+  }
+
+  async verifyEmailOtpChallenge(input: {
+    code: string;
+    email: string;
+    purpose: EmailOtpPurpose;
+  }): Promise<EmailOtpVerificationResult> {
+    await ensureDatabase();
+    const database = getDatabaseConnection();
+    const email = input.email.trim().toLowerCase();
+    const now = new Date().toISOString();
+    return database.transaction(async (transaction: Transaction) => {
+      const [challenge] = await database.query<{
+        attemptCount: number;
+        codeHash: string;
+        expiresAt: string;
+        id: string;
+      }>(
+        `SELECT id, code_hash AS codeHash, expires_at AS expiresAt, attempt_count AS attemptCount
+         FROM email_otp_challenges WHERE lower(email) = lower(:email) AND purpose = :purpose
+         AND used_at IS NULL ORDER BY created_at DESC LIMIT 1 FOR UPDATE`,
+        { replacements: { email, purpose: input.purpose }, transaction, type: QueryTypes.SELECT },
+      );
+      if (!challenge) return "invalid";
+      if (challenge.expiresAt <= now) return "expired";
+      if (challenge.attemptCount >= 5) return "locked";
+      if (!verifyOneTimeCode(challenge.codeHash, input.code)) {
+        await database.query(
+          "UPDATE email_otp_challenges SET attempt_count = attempt_count + 1 WHERE id = :id",
+          { replacements: { id: challenge.id }, transaction },
+        );
+        return "invalid";
+      }
+      await database.query("UPDATE email_otp_challenges SET used_at = :usedAt WHERE id = :id", {
+        replacements: { id: challenge.id, usedAt: now },
+        transaction,
+      });
+      return "verified";
+    });
   }
 
   async createOrder(input: CreateOrderInput): Promise<AdminRecentOrder> {
@@ -521,14 +603,15 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     if (!customer) throw new Error("Customer profile was not created.");
     const orderDate = new Date().toISOString();
     await database.query(
-      `INSERT INTO orders (customer_profile_id, order_date, status, shipping_zone, currency, subtotal_aed_cents, shipping_fee_aed_cents, total_aed_cents, payment_method, delivery_address)
-       VALUES (:customerProfileId, :orderDate, 'new', :shippingZone, 'AED', :subtotal, :shipping, :total, :paymentMethod, :deliveryAddress)`,
+      `INSERT INTO orders (customer_profile_id, order_date, status, shipping_zone, currency, subtotal_aed_cents, shipping_fee_aed_cents, total_aed_cents, payment_method, payment_status, delivery_address)
+       VALUES (:customerProfileId, :orderDate, 'new', :shippingZone, 'AED', :subtotal, :shipping, :total, :paymentMethod, :paymentStatus, :deliveryAddress)`,
       {
         replacements: {
           customerProfileId: customer.id,
           deliveryAddress: input.deliveryAddress,
           orderDate,
           paymentMethod: input.paymentMethod,
+          paymentStatus: input.paymentStatus ?? "not_required",
           shipping: input.shippingFeeAedCents,
           shippingZone: input.emirate,
           subtotal: input.subtotalAedCents,
@@ -543,11 +626,12 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     if (!createdOrder) throw new Error("Order was not created.");
     for (const line of input.lines) {
       await database.query(
-        `INSERT INTO order_items (order_id, variant_or_product_id, product_name, quantity, unit_price_aed_cents, line_total_aed_cents)
-         VALUES (:orderId, 0, :name, :quantity, :price, :lineTotal)`,
+        `INSERT INTO order_items (order_id, variant_or_product_id, product_name, product_image_url, quantity, unit_price_aed_cents, line_total_aed_cents)
+         VALUES (:orderId, 0, :name, :imageUrl, :quantity, :price, :lineTotal)`,
         {
           replacements: {
             lineTotal: line.unitPriceAedCents * line.quantity,
+            imageUrl: line.imageUrl,
             name: line.name,
             orderId: createdOrder.id,
             price: line.unitPriceAedCents,
@@ -873,10 +957,49 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     return getDatabaseConnection().query<AdminOrder>(
       `SELECT o.id, COALESCE(cp.name, 'Guest customer') AS customerName, COALESCE(cp.email, '') AS customerEmail,
         o.order_date AS orderDate, o.status, o.total_aed_cents AS totalAedCents, o.payment_method AS paymentMethod,
+        o.payment_status AS paymentStatus,
         o.shipping_zone AS shippingZone, cp.phone AS customerPhone
        FROM orders o LEFT JOIN customer_profiles cp ON cp.id = o.customer_profile_id
        ORDER BY o.order_date DESC, o.id DESC LIMIT :limit`,
       { replacements: { limit }, type: QueryTypes.SELECT },
+    );
+  }
+
+  async listCustomerOrderDetails(
+    customerEmail: string,
+    limit: number,
+  ): Promise<import("@/domain/demo-store/demo-store-repository").AdminOrderDetail[]> {
+    await ensureDatabase();
+    const database = getDatabaseConnection();
+    const normalizedEmail = customerEmail.trim().toLowerCase();
+    const orders = await database.query<
+      import("@/domain/demo-store/demo-store-repository").AdminOrderDetail
+    >(
+      `SELECT o.id, COALESCE(cp.name, 'Customer') AS customerName, COALESCE(cp.email, '') AS customerEmail,
+        cp.phone AS customerPhone, o.order_date AS orderDate, o.status, o.total_aed_cents AS totalAedCents,
+        o.payment_method AS paymentMethod, o.payment_status AS paymentStatus, o.shipping_zone AS shippingZone, o.delivery_address AS deliveryAddress
+       FROM orders o INNER JOIN customer_profiles cp ON cp.id = o.customer_profile_id
+       WHERE lower(cp.email) = :email AND o.payment_status IN ('not_required', 'paid')
+       ORDER BY o.order_date DESC, o.id DESC LIMIT :limit`,
+      { replacements: { email: normalizedEmail, limit }, type: QueryTypes.SELECT },
+    );
+    return Promise.all(
+      orders.map(async (order) => {
+        const items = await database.query<
+          import("@/domain/demo-store/demo-store-repository").AdminOrderDetail["items"][number]
+        >(
+          `SELECT oi.id, oi.product_name AS name,
+            COALESCE(oi.product_image_url, (
+              SELECT p.image_url FROM products p
+              WHERE lower(p.name) = lower(oi.product_name) LIMIT 1
+            )) AS imageUrl,
+            oi.quantity, oi.unit_price_aed_cents AS unitPriceAedCents,
+            oi.line_total_aed_cents AS lineTotalAedCents
+           FROM order_items oi WHERE oi.order_id = :id ORDER BY oi.id`,
+          { replacements: { id: order.id }, type: QueryTypes.SELECT },
+        );
+        return { ...order, items };
+      }),
     );
   }
 
@@ -885,6 +1008,18 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     await getDatabaseConnection().query("UPDATE orders SET status = :status WHERE id = :id", {
       replacements: { id, status },
     });
+  }
+
+  async markStripeOrderPaid(id: number, checkoutSessionId: string): Promise<boolean> {
+    await ensureDatabase();
+    const database = getDatabaseConnection();
+    const [result, metadata] = await database.query(
+      `UPDATE orders
+       SET payment_status = 'paid', stripe_checkout_session_id = :checkoutSessionId
+       WHERE id = :id AND payment_method = 'stripe' AND payment_status = 'pending'`,
+      { replacements: { checkoutSessionId, id } },
+    );
+    return affectedRows(result) > 0 || affectedRows(metadata) > 0;
   }
 
   async getOrderDetail(
@@ -897,7 +1032,7 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     >(
       `SELECT o.id, COALESCE(cp.name, 'Guest customer') AS customerName, COALESCE(cp.email, '') AS customerEmail,
         cp.phone AS customerPhone, o.order_date AS orderDate, o.status, o.total_aed_cents AS totalAedCents,
-        o.payment_method AS paymentMethod, o.shipping_zone AS shippingZone, o.delivery_address AS deliveryAddress
+        o.payment_method AS paymentMethod, o.payment_status AS paymentStatus, o.shipping_zone AS shippingZone, o.delivery_address AS deliveryAddress
        FROM orders o LEFT JOIN customer_profiles cp ON cp.id = o.customer_profile_id WHERE o.id = :id LIMIT 1`,
       { replacements: { id }, type: QueryTypes.SELECT },
     );
@@ -905,12 +1040,31 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     const items = await database.query<
       import("@/domain/demo-store/demo-store-repository").AdminOrderDetail["items"][number]
     >(
-      `SELECT id, product_name AS name, quantity, unit_price_aed_cents AS unitPriceAedCents,
-        line_total_aed_cents AS lineTotalAedCents FROM order_items WHERE order_id = :id ORDER BY id`,
+      `SELECT oi.id, oi.product_name AS name,
+        COALESCE(oi.product_image_url, (
+          SELECT p.image_url FROM products p
+          WHERE lower(p.name) = lower(oi.product_name) LIMIT 1
+        )) AS imageUrl,
+        oi.quantity, oi.unit_price_aed_cents AS unitPriceAedCents,
+        oi.line_total_aed_cents AS lineTotalAedCents
+       FROM order_items oi WHERE oi.order_id = :id ORDER BY oi.id`,
       { replacements: { id }, type: QueryTypes.SELECT },
     );
     return { ...order, items };
   }
+}
+
+function affectedRows(value: unknown): number {
+  if (typeof value === "number") return value;
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "affectedRows" in value &&
+    typeof value.affectedRows === "number"
+  ) {
+    return value.affectedRows;
+  }
+  return 0;
 }
 
 async function ensureDatabase(): Promise<void> {

@@ -5,7 +5,9 @@ const serverEnvironmentSchema = z.object({
   DB_PORT: z.coerce.number().int().positive().default(3306),
   DB_NAME: z.string().min(1),
   DB_USER: z.string().min(1),
-  DB_PASSWORD: z.string().min(1),
+  // Local WAMP/XAMPP installations commonly use the root account without a password.
+  // The variable remains required, but its value may be intentionally empty in `.env.local`.
+  DB_PASSWORD: z.string(),
   DB_SSL: z.enum(["true", "false"]).default("false"),
   CATALOG_UPLOADS_DIRECTORY: z.string().trim().min(1).optional(),
   SEED_DEMO_DATA: z
@@ -17,6 +19,8 @@ const serverEnvironmentSchema = z.object({
   SMTP_USER: z.string().trim().min(1).optional(),
   SMTP_PASSWORD: z.string().min(1).optional(),
   SMTP_FROM: z.string().trim().email().optional(),
+  STRIPE_SECRET_KEY: z.string().trim().min(1).optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().trim().min(1).optional().or(z.literal("")),
 });
 export type ServerEnvironment = z.infer<typeof serverEnvironmentSchema>;
 export function getServerEnvironment(): ServerEnvironment {

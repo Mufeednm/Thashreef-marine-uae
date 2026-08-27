@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { z } from "zod";
 import { formatAedFromCents } from "@/shared/utils/currency";
 
 interface StoredLine {
@@ -19,6 +20,28 @@ interface DeliveryAddress {
   street: string;
   zip: string;
 }
+const savedCheckoutDetailsSchema = z.object({
+  address: z.object({
+    apartment: z.string().max(120),
+    area: z.string().max(120),
+    building: z.string().max(120),
+    city: z.string().max(120),
+    country: z.string().max(120),
+    street: z.string().max(180),
+    zip: z.string().max(40),
+  }),
+  emirate: z.enum([
+    "Dubai",
+    "Abu Dhabi",
+    "Sharjah",
+    "Ajman",
+    "Ras Al Khaimah",
+    "Fujairah",
+    "Umm Al Quwain",
+  ]),
+  phone: z.string().max(32),
+  version: z.literal(1),
+});
 const steps = ["Customer", "Delivery", "Review", "Payment"] as const;
 
 export function CheckoutExperience({
@@ -32,7 +55,7 @@ export function CheckoutExperience({
   const [emailDelivery, setEmailDelivery] = useState<"failed" | "not-configured" | "sent" | null>(
     null,
   );
-  const payment = "cod";
+  const [payment, setPayment] = useState<"cod" | "stripe">("stripe");
   const [phone, setPhone] = useState(customer.phone);
   const [emirate, setEmirate] = useState("Dubai");
   const [address, setAddress] = useState<DeliveryAddress>({
@@ -46,6 +69,8 @@ export function CheckoutExperience({
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<number | null>(null);
+  const [detailsSaved, setDetailsSaved] = useState(false);
   useEffect(() => {
     const timer = window.setTimeout(() => {
       try {
@@ -58,17 +83,67 @@ export function CheckoutExperience({
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        const rawDetails = window.localStorage.getItem(checkoutDetailsStorageKey(customer.email));
+        if (!rawDetails) return;
+        const savedDetails = savedCheckoutDetailsSchema.safeParse(JSON.parse(rawDetails));
+        if (!savedDetails.success) return;
+        setAddress(savedDetails.data.address);
+        setEmirate(savedDetails.data.emirate);
+        setPhone(savedDetails.data.phone);
+        setDetailsSaved(true);
+      } catch {
+        window.localStorage.removeItem(checkoutDetailsStorageKey(customer.email));
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [customer.email]);
   const subtotal = useMemo(
     () => lines.reduce((sum, line) => sum + line.priceAedCents * line.quantity, 0),
     [lines],
   );
   const shipping = subtotal === 0 ? 0 : subtotal >= 70000 ? 0 : 2000;
   const total = subtotal + shipping;
-  if (complete) return <Success customer={customer} emailDelivery={emailDelivery} total={total} />;
+  if (complete)
+    return (
+      <Success customer={customer} emailDelivery={emailDelivery} orderId={orderId} total={total} />
+    );
+
+  function validationMessage(currentStep: number): string | null {
+    if (currentStep === 0 && phone.trim().length < 7) {
+      return "Enter a valid mobile number before continuing.";
+    }
+    if (currentStep === 1) {
+      const missingAddressDetail = [
+        address.country,
+        address.city,
+        address.area,
+        address.building,
+        address.street,
+      ].some((value) => !value.trim());
+      if (missingAddressDetail || !emirate.trim()) {
+        return "Complete your country, emirate, city, area, building, and street before continuing.";
+      }
+    }
+    if (currentStep === 2 && lines.length === 0) return "Your basket is empty.";
+    return null;
+  }
+
+  function saveCheckoutDetails(): void {
+    window.localStorage.setItem(
+      checkoutDetailsStorageKey(customer.email),
+      JSON.stringify({ address, emirate, phone, version: 1 }),
+    );
+    setDetailsSaved(true);
+  }
+
   async function placeOrder(): Promise<void> {
-    if (!phone.trim()) {
-      setStep(0);
-      setError("Add a mobile number before placing your order.");
+    const invalidStep = [0, 1, 2].find((currentStep) => validationMessage(currentStep));
+    if (invalidStep !== undefined) {
+      setStep(invalidStep);
+      setError(validationMessage(invalidStep));
       return;
     }
     setSubmitting(true);
@@ -86,26 +161,40 @@ export function CheckoutExperience({
       ]
         .filter(Boolean)
         .join(", ");
-      const response = await fetch("/api/orders", {
-        body: JSON.stringify({
-          deliveryAddress,
-          emirate,
-          lines: lines.map((line) => ({ productId: line.id, quantity: line.quantity })),
-          paymentMethod: payment,
-          phone,
-        }),
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-      });
+      const response = await fetch(
+        payment === "stripe" ? "/api/payments/stripe/checkout" : "/api/orders",
+        {
+          body: JSON.stringify({
+            deliveryAddress,
+            emirate,
+            lines: lines.map((line) => ({ productId: line.id, quantity: line.quantity })),
+            ...(payment === "cod" ? { paymentMethod: payment } : {}),
+            phone,
+          }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        },
+      );
       const body = (await response.json().catch(() => ({}))) as {
+        checkoutUrl?: string;
         emailDelivery?: "failed" | "not-configured" | "sent";
         message?: string;
+        orderId?: number;
       };
       if (!response.ok) {
         setError(body.message ?? "Your order could not be saved. Please try again.");
         return;
       }
+      if (payment === "stripe") {
+        if (!body.checkoutUrl) {
+          setError("We could not open secure card payment. Please try again.");
+          return;
+        }
+        window.location.assign(body.checkoutUrl);
+        return;
+      }
       setEmailDelivery(body.emailDelivery ?? "not-configured");
+      setOrderId(body.orderId ?? null);
       window.sessionStorage.removeItem("thashreef-cart");
       setComplete(true);
     } catch {
@@ -142,7 +231,12 @@ export function CheckoutExperience({
         <div className="mt-8 grid gap-7 lg:grid-cols-[minmax(0,1fr)_360px]">
           <section className="rounded-[2rem] bg-white p-6 shadow-sm sm:p-8">
             {step === 0 ? (
-              <CustomerForm customer={customer} phone={phone} setPhone={setPhone} />
+              <CustomerForm
+                customer={customer}
+                detailsSaved={detailsSaved}
+                phone={phone}
+                setPhone={setPhone}
+              />
             ) : null}
             {step === 1 ? (
               <AddressForm
@@ -153,7 +247,7 @@ export function CheckoutExperience({
               />
             ) : null}
             {step === 2 ? <Review lines={lines} /> : null}
-            {step === 3 ? <Payment /> : null}
+            {step === 3 ? <Payment payment={payment} setPayment={setPayment} /> : null}
             {error ? (
               <p
                 aria-live="polite"
@@ -177,13 +271,27 @@ export function CheckoutExperience({
                 onClick={() => {
                   if (step === 3) void placeOrder();
                   else {
+                    const message = validationMessage(step);
+                    if (message) {
+                      setError(message);
+                      return;
+                    }
                     setError(null);
+                    saveCheckoutDetails();
                     setStep((value) => value + 1);
                   }
                 }}
                 type="button"
               >
-                {step === 3 ? (submitting ? "Placing order..." : "Place order") : "Continue"}
+                {step === 3
+                  ? submitting
+                    ? payment === "stripe"
+                      ? "Opening secure payment..."
+                      : "Placing order..."
+                    : payment === "stripe"
+                      ? "Pay securely"
+                      : "Place order"
+                  : "Continue"}
               </button>
             </div>
           </section>
@@ -195,10 +303,12 @@ export function CheckoutExperience({
 }
 function CustomerForm({
   customer,
+  detailsSaved,
   phone,
   setPhone,
 }: {
   customer: { name: string; email: string; phone: string };
+  detailsSaved: boolean;
   phone: string;
   setPhone: (value: string) => void;
 }): ReactElement {
@@ -208,6 +318,11 @@ function CustomerForm({
       <p className="mt-2 text-sm text-slate-500">
         We’ll use these details for order updates and delivery coordination.
       </p>
+      {detailsSaved ? (
+        <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800">
+          Your phone and delivery details are saved on this device for your next checkout.
+        </p>
+      ) : null}
       <div className="mt-6 grid gap-5 sm:grid-cols-2">
         <Field defaultValue={customer.name} label="Full name" name="name" />
         <Field defaultValue={customer.email} label="Email" name="email" type="email" />
@@ -224,6 +339,9 @@ function CustomerForm({
       </div>
     </fieldset>
   );
+}
+function checkoutDetailsStorageKey(email: string): string {
+  return `marsa-checkout-details:${email.trim().toLowerCase()}`;
 }
 function AddressForm({
   address,
@@ -343,15 +461,42 @@ function Review({ lines }: { lines: StoredLine[] }): ReactElement {
     </fieldset>
   );
 }
-function Payment(): ReactElement {
+function Payment({
+  payment,
+  setPayment,
+}: {
+  payment: "cod" | "stripe";
+  setPayment: (value: "cod" | "stripe") => void;
+}): ReactElement {
   return (
     <fieldset>
       <legend className="text-2xl font-black">Payment method</legend>
       <p className="mt-2 text-sm text-slate-500">
-        Cash on Delivery is the only payment method currently available.
+        Pay securely by card through Stripe, or choose Cash on Delivery for UAE orders.
       </p>
       <label className="mt-6 flex gap-3 rounded-2xl border border-[#0e7490] bg-cyan-50 p-4">
-        <input checked name="payment" readOnly type="radio" value="cod" />
+        <input
+          checked={payment === "stripe"}
+          name="payment"
+          onChange={() => setPayment("stripe")}
+          type="radio"
+          value="stripe"
+        />
+        <span>
+          <b>Card payment</b>
+          <small className="mt-1 block text-slate-500">
+            Secure Stripe checkout. Test mode is active; no real payment is taken.
+          </small>
+        </span>
+      </label>
+      <label className="mt-3 flex gap-3 rounded-2xl border border-slate-200 p-4">
+        <input
+          checked={payment === "cod"}
+          name="payment"
+          onChange={() => setPayment("cod")}
+          type="radio"
+          value="cod"
+        />
         <span>
           <b>Cash on Delivery</b>
           <small className="mt-1 block text-slate-500">Pay when your UAE order arrives.</small>
@@ -429,10 +574,12 @@ function Field({
 function Success({
   customer,
   emailDelivery,
+  orderId,
   total,
 }: {
   customer: { email: string; name: string };
   emailDelivery: "failed" | "not-configured" | "sent" | null;
+  orderId: number | null;
   total: number;
 }): ReactElement {
   const emailMessage =
@@ -489,9 +636,9 @@ function Success({
         </div>
         <Link
           className="mt-8 inline-flex min-h-12 items-center justify-center rounded-full bg-[#071827] px-6 text-sm font-black text-white transition hover:bg-[#0e7490] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e7490]"
-          href="/"
+          href="/account"
         >
-          Continue shopping
+          View my orders{orderId ? ` · #${orderId}` : ""}
         </Link>
       </section>
     </main>

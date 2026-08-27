@@ -40,6 +40,7 @@ export interface AdminOrder extends AdminRecentOrder {
   customerEmail: string;
   customerPhone: string | null;
   paymentMethod: string;
+  paymentStatus: "not_required" | "paid" | "pending" | "failed";
   shippingZone: string;
 }
 
@@ -47,6 +48,7 @@ export interface AdminOrderDetail extends AdminOrder {
   deliveryAddress: string | null;
   items: Array<{
     id: number;
+    imageUrl: string | null;
     lineTotalAedCents: number;
     name: string;
     quantity: number;
@@ -65,10 +67,13 @@ export interface AdminCustomer {
 
 export interface CreateCustomerInput {
   name: string;
-  phone: string;
   email: string;
   password: string;
+  phone?: string | null;
 }
+
+export type EmailOtpPurpose = "login" | "registration";
+export type EmailOtpVerificationResult = "expired" | "invalid" | "locked" | "verified";
 
 export interface CreateOrderInput {
   customerEmail: string;
@@ -77,10 +82,17 @@ export interface CreateOrderInput {
   emirate: string;
   deliveryAddress: string;
   paymentMethod: string;
+  paymentStatus?: "not_required" | "pending";
   shippingFeeAedCents: number;
   subtotalAedCents: number;
   totalAedCents: number;
-  lines: Array<{ productId: string; name: string; quantity: number; unitPriceAedCents: number }>;
+  lines: Array<{
+    productId: string;
+    name: string;
+    imageUrl: string;
+    quantity: number;
+    unitPriceAedCents: number;
+  }>;
 }
 
 export interface Brand {
@@ -118,6 +130,18 @@ export interface DemoStoreRepository {
   deleteProduct(id: string): Promise<void>;
   addProduct(input: PersistedProductInput): Promise<Product>;
   createCustomer(input: CreateCustomerInput): Promise<DemoUser | null>;
+  createEmailOtpChallenge(input: {
+    codeHash: string;
+    email: string;
+    expiresAt: string;
+    purpose: EmailOtpPurpose;
+  }): Promise<{ id: string; status: "cooldown" | "created" }>;
+  deleteEmailOtpChallenge(id: string): Promise<void>;
+  verifyEmailOtpChallenge(input: {
+    code: string;
+    email: string;
+    purpose: EmailOtpPurpose;
+  }): Promise<EmailOtpVerificationResult>;
   createOrder(input: CreateOrderInput): Promise<AdminRecentOrder>;
   findUserByEmail(emailOrUsername: string): Promise<DemoUser | null>;
   findUserById(id: string): Promise<DemoUser | null>;
@@ -131,11 +155,13 @@ export interface DemoStoreRepository {
   listCategories(): Promise<Category[]>;
   listCustomers(limit: number): Promise<AdminCustomer[]>;
   listCategoryFields(): Promise<CategoryField[]>;
+  listCustomerOrderDetails(customerEmail: string, limit: number): Promise<AdminOrderDetail[]>;
   listProducts(): Promise<Product[]>;
   listProductVariants(): Promise<ProductVariant[]>;
   listRecentOrders(limit: number): Promise<AdminRecentOrder[]>;
   listOrders(limit: number): Promise<AdminOrder[]>;
   getOrderDetail(id: number): Promise<AdminOrderDetail | null>;
+  markStripeOrderPaid(id: number, checkoutSessionId: string): Promise<boolean>;
   updateOrderStatus(id: number, status: "accepted" | "rejected"): Promise<void>;
   updateBrand(id: number, input: Omit<Brand, "id" | "slug">): Promise<Brand | null>;
   updateCategory(

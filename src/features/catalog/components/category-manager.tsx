@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useActionState, useEffect, useState, type ReactElement, type ReactNode } from "react";
 import type { Category } from "@/domain/catalog/category";
 import {
@@ -125,18 +126,36 @@ function MainCategoryRow({
   return (
     <tr className="hover:bg-slate-50">
       <td className="px-5 py-4">
-        <button
-          className="text-left font-bold text-slate-800 underline-offset-4 hover:text-[#0e7490] hover:underline"
-          onClick={openSubcategories}
-          type="button"
-        >
-          {mainCategory.name}
-        </button>
-        {mainCategory.nameAr ? (
-          <p className="mt-1 text-xs text-slate-500" dir="rtl">
-            {mainCategory.nameAr}
-          </p>
-        ) : null}
+        <div className="flex items-center gap-3">
+          <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+            {mainCategory.bannerImageUrl ? (
+              <Image
+                alt={`${mainCategory.name} category image`}
+                className="h-full w-full object-cover"
+                height={40}
+                src={mainCategory.bannerImageUrl}
+                unoptimized={mainCategory.bannerImageUrl.startsWith("/")}
+                width={40}
+              />
+            ) : (
+              <span className="text-xs font-bold text-slate-400">No image</span>
+            )}
+          </div>
+          <div>
+            <button
+              className="text-left font-bold text-slate-800 underline-offset-4 hover:text-[#0e7490] hover:underline"
+              onClick={openSubcategories}
+              type="button"
+            >
+              {mainCategory.name}
+            </button>
+            {mainCategory.nameAr ? (
+              <p className="mt-1 text-xs text-slate-500" dir="rtl">
+                {mainCategory.nameAr}
+              </p>
+            ) : null}
+          </div>
+        </div>
       </td>
       <td className="px-5 py-4">
         <button
@@ -352,16 +371,18 @@ function CategoryForm({
         <Input defaultValue={category?.name} label="Category name (English)" name="name" required />
         <Input defaultValue={category?.nameAr ?? ""} label="Category name (Arabic)" name="nameAr" />
       </div>
-      <label className="block text-sm font-semibold text-slate-700">
-        Category image {category ? "(replace optional)" : "*"}
-        <input
-          accept="image/jpeg,image/png,image/webp"
-          className="mt-2 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
-          name="imageFile"
-          required={!category}
-          type="file"
-        />
-      </label>
+      {!isSubcategory ? (
+        <label className="block text-sm font-semibold text-slate-700">
+          Category image {category ? "(replace optional)" : "*"}
+          <input
+            accept="image/jpeg,image/png,image/webp"
+            className="mt-2 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+            name="imageFile"
+            required={!category}
+            type="file"
+          />
+        </label>
+      ) : null}
       {!isSubcategory ? (
         <div>
           <label className="flex min-h-12 items-center gap-3 rounded-xl bg-slate-50 px-4 text-sm font-semibold">

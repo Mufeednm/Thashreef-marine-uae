@@ -469,8 +469,9 @@ export async function updateCategoryAction(
   if (!existingCategory) return { message: "This category could not be found.", status: "error" };
   const result = await updateCategoryForAdmin(repository, adminUser, id.data, {
     bannerImageUrl:
-      (await persistCatalogImage(parsedImage.data.imageFile, "categories")) ??
-      existingCategory.bannerImageUrl,
+      (parsed.data.parentCategoryId === null
+        ? await persistCatalogImage(parsedImage.data.imageFile, "categories")
+        : undefined) ?? existingCategory.bannerImageUrl,
     displayOrder: existingCategory.displayOrder,
     isFeatured: existingCategory.isFeatured,
     homepageOrder: 0,
@@ -536,7 +537,8 @@ export async function createCategoryAction(
     };
   }
 
-  if (!parsedImage.data.imageFile || parsedImage.data.imageFile.size === 0)
+  const isSubcategory = parsedCategory.data.parentCategoryId !== null;
+  if (!isSubcategory && (!parsedImage.data.imageFile || parsedImage.data.imageFile.size === 0))
     return {
       fieldErrors: { imageFile: ["A category image is required."] },
       message: "A category image is required.",
@@ -554,7 +556,9 @@ export async function createCategoryAction(
   }
 
   const result = await createCategoryForAdmin(repository, adminUser, {
-    bannerImageUrl: (await persistCatalogImage(parsedImage.data.imageFile, "categories")) ?? null,
+    bannerImageUrl: isSubcategory
+      ? null
+      : ((await persistCatalogImage(parsedImage.data.imageFile, "categories")) ?? null),
     displayOrder: 0,
     fieldLabels: [],
     isFeatured: false,
