@@ -20,3 +20,4 @@ Add a Contact Us experience inspired by the provided Rimal Marine reference page
 - Corrected test-mode completion so unpaid attempts are not shown to the customer, while a server-verified successful return marks the order paid and sends the email before a public webhook is available locally.
 - Added browser-local checkout-detail saving after a customer continues through validated checkout steps, so their phone and delivery address are prefilled for the next checkout in the same browser.
 - Added an accessible country calling-code selector next to the checkout mobile-number input. The selected code and number are saved together and sent as one formatted international phone number with the order.
+- Fixed Stripe Checkout return links for Hostinger by using the configured public site address instead of its internal proxy address.

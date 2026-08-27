@@ -9,6 +9,7 @@ const serverEnvironmentSchema = z.object({
   // The variable remains required, but its value may be intentionally empty in `.env.local`.
   DB_PASSWORD: z.string(),
   DB_SSL: z.enum(["true", "false"]).default("false"),
+  NEXT_PUBLIC_APP_URL: z.string().url().optional(),
   CATALOG_UPLOADS_DIRECTORY: z.string().trim().min(1).optional(),
   SEED_DEMO_DATA: z
     .enum(["true", "false"])

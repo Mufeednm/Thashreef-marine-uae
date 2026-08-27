@@ -4,6 +4,7 @@ import { restoreSessionUser } from "@/application/auth/auth-service";
 import { readSessionUser } from "@/infrastructure/auth/session-cookie";
 import { createDemoStoreRepository } from "@/infrastructure/demo-store/file-demo-store-repository";
 import { getStripeClient } from "@/infrastructure/payments/stripe-client";
+import { getServerEnvironment } from "@/config/env";
 
 const stripeCheckoutSchema = z.object({
   deliveryAddress: z.string().trim().min(8).max(600),
@@ -83,7 +84,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       totalAedCents: subtotal + shipping,
     });
 
-    const origin = new URL(request.url).origin;
+    const origin = getCheckoutOrigin(request);
     const checkout = await getStripeClient().checkout.sessions.create({
       cancel_url: `${origin}/checkout?stripe=cancelled`,
       client_reference_id: user.id,
@@ -124,4 +125,10 @@ export async function POST(request: Request): Promise<NextResponse> {
       { status: 500 },
     );
   }
+}
+
+function getCheckoutOrigin(request: Request): string {
+  const configuredOrigin = getServerEnvironment().NEXT_PUBLIC_APP_URL;
+  if (configuredOrigin) return configuredOrigin.replace(/\/$/, "");
+  return new URL(request.url).origin;
 }

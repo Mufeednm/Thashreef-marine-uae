@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Use the configured public website address for Stripe Checkout return links, preventing Hostinger's internal server address from appearing after successful payment.
 - Add an international country calling-code selector to checkout mobile-number entry and preserve the selected code with saved delivery details.
 - Save each signed-in customer's validated phone and delivery details in their current browser when they continue through checkout, then prefill them on the next checkout.
 - Add Stripe test-mode hosted card checkout with server-calculated product totals, protected customer sessions, pending/paid payment states, secure return verification, and a signed webhook route for final payment confirmation and email delivery.

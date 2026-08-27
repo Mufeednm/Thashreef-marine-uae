@@ -1,5 +1,11 @@
 # Decision Log
 
+## 2026-08-27 - Stripe Checkout public return address
+
+- **Decision:** Build Stripe Checkout success and cancellation links from `NEXT_PUBLIC_APP_URL` when configured, rather than from the incoming server request.
+- **Reasoning:** Hostinger proxies public traffic to an internal `0.0.0.0:3000` address; using that request origin creates an unusable Stripe return URL.
+- **Impact:** Live test-card payments return customers to the public checkout result page on marsaedgemarine.ae.
+
 ## 2026-08-27 - Checkout international calling code
 
 - **Decision:** Collect a country calling code separately from the mobile number during checkout and format the full international number for the order.
