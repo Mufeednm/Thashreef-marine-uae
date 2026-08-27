@@ -1,5 +1,11 @@
 # Decision Log
 
+## 2026-08-27 - Checkout international calling code
+
+- **Decision:** Collect a country calling code separately from the mobile number during checkout and format the full international number for the order.
+- **Reasoning:** Customers may order from outside the UAE; a visible selector prevents ambiguous numbers and remembers the customer's choice on their device.
+- **Impact:** Checkout defaults to UAE (+971), offers commonly used international codes, and keeps the code with the saved delivery details.
+
 ## 2026-08-27 - Saved customer checkout details
 
 - **Decision:** Save validated phone and delivery values locally for the signed-in customer's email after they continue through checkout, then prefill them on their next visit using the same browser.

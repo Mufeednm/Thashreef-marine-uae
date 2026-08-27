@@ -20,6 +20,31 @@ interface DeliveryAddress {
   street: string;
   zip: string;
 }
+interface CheckoutPhoneDetails {
+  countryCode: string;
+  phone: string;
+}
+
+const countryDialingCodes = [
+  { code: "+971", country: "United Arab Emirates" },
+  { code: "+966", country: "Saudi Arabia" },
+  { code: "+974", country: "Qatar" },
+  { code: "+965", country: "Kuwait" },
+  { code: "+973", country: "Bahrain" },
+  { code: "+968", country: "Oman" },
+  { code: "+91", country: "India" },
+  { code: "+92", country: "Pakistan" },
+  { code: "+880", country: "Bangladesh" },
+  { code: "+94", country: "Sri Lanka" },
+  { code: "+63", country: "Philippines" },
+  { code: "+44", country: "United Kingdom" },
+  { code: "+1", country: "United States & Canada" },
+  { code: "+61", country: "Australia" },
+  { code: "+49", country: "Germany" },
+  { code: "+33", country: "France" },
+  { code: "+39", country: "Italy" },
+  { code: "+27", country: "South Africa" },
+] as const;
 const savedCheckoutDetailsSchema = z.object({
   address: z.object({
     apartment: z.string().max(120),
@@ -39,8 +64,9 @@ const savedCheckoutDetailsSchema = z.object({
     "Fujairah",
     "Umm Al Quwain",
   ]),
+  countryCode: z.string().regex(/^\+\d{1,4}$/),
   phone: z.string().max(32),
-  version: z.literal(1),
+  version: z.literal(2),
 });
 const steps = ["Customer", "Delivery", "Review", "Payment"] as const;
 
@@ -56,7 +82,9 @@ export function CheckoutExperience({
     null,
   );
   const [payment, setPayment] = useState<"cod" | "stripe">("stripe");
-  const [phone, setPhone] = useState(customer.phone);
+  const initialPhone = parseCheckoutPhone(customer.phone);
+  const [countryCode, setCountryCode] = useState(initialPhone.countryCode);
+  const [phone, setPhone] = useState(initialPhone.phone);
   const [emirate, setEmirate] = useState("Dubai");
   const [address, setAddress] = useState<DeliveryAddress>({
     apartment: "",
@@ -92,6 +120,7 @@ export function CheckoutExperience({
         if (!savedDetails.success) return;
         setAddress(savedDetails.data.address);
         setEmirate(savedDetails.data.emirate);
+        setCountryCode(savedDetails.data.countryCode);
         setPhone(savedDetails.data.phone);
         setDetailsSaved(true);
       } catch {
@@ -112,7 +141,7 @@ export function CheckoutExperience({
     );
 
   function validationMessage(currentStep: number): string | null {
-    if (currentStep === 0 && phone.trim().length < 7) {
+    if (currentStep === 0 && phone.replace(/\D/g, "").length < 7) {
       return "Enter a valid mobile number before continuing.";
     }
     if (currentStep === 1) {
@@ -134,7 +163,7 @@ export function CheckoutExperience({
   function saveCheckoutDetails(): void {
     window.localStorage.setItem(
       checkoutDetailsStorageKey(customer.email),
-      JSON.stringify({ address, emirate, phone, version: 1 }),
+      JSON.stringify({ address, countryCode, emirate, phone, version: 2 }),
     );
     setDetailsSaved(true);
   }
@@ -169,7 +198,7 @@ export function CheckoutExperience({
             emirate,
             lines: lines.map((line) => ({ productId: line.id, quantity: line.quantity })),
             ...(payment === "cod" ? { paymentMethod: payment } : {}),
-            phone,
+            phone: formatCheckoutPhone(countryCode, phone),
           }),
           headers: { "Content-Type": "application/json" },
           method: "POST",
@@ -233,8 +262,10 @@ export function CheckoutExperience({
             {step === 0 ? (
               <CustomerForm
                 customer={customer}
+                countryCode={countryCode}
                 detailsSaved={detailsSaved}
                 phone={phone}
+                setCountryCode={setCountryCode}
                 setPhone={setPhone}
               />
             ) : null}
@@ -303,13 +334,17 @@ export function CheckoutExperience({
 }
 function CustomerForm({
   customer,
+  countryCode,
   detailsSaved,
   phone,
+  setCountryCode,
   setPhone,
 }: {
   customer: { name: string; email: string; phone: string };
+  countryCode: string;
   detailsSaved: boolean;
   phone: string;
+  setCountryCode: (value: string) => void;
   setPhone: (value: string) => void;
 }): ReactElement {
   return (
@@ -326,22 +361,65 @@ function CustomerForm({
       <div className="mt-6 grid gap-5 sm:grid-cols-2">
         <Field defaultValue={customer.name} label="Full name" name="name" />
         <Field defaultValue={customer.email} label="Email" name="email" type="email" />
-        <label className="block text-sm font-bold text-slate-700">
-          Mobile number
-          <input
-            className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 font-normal outline-none transition focus:border-[#0e7490] focus:bg-white"
-            onChange={(event) => setPhone(event.target.value)}
-            placeholder="+971 50 000 0000"
-            type="tel"
-            value={phone}
-          />
-        </label>
+        <div className="sm:col-span-2">
+          <span className="block text-sm font-bold text-slate-700">Mobile number</span>
+          <div className="mt-2 grid gap-3 sm:grid-cols-[minmax(210px,0.8fr)_minmax(0,1.2fr)]">
+            <label className="sr-only" htmlFor="checkout-country-code">
+              Country calling code
+            </label>
+            <select
+              aria-label="Country calling code"
+              className="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 font-normal outline-none transition focus:border-[#0e7490] focus:bg-white"
+              id="checkout-country-code"
+              onChange={(event) => setCountryCode(event.target.value)}
+              value={countryCode}
+            >
+              {countryDialingCodes.map((option) => (
+                <option key={`${option.code}-${option.country}`} value={option.code}>
+                  {option.country} ({option.code})
+                </option>
+              ))}
+            </select>
+            <label className="sr-only" htmlFor="checkout-mobile-number">
+              Mobile number without country code
+            </label>
+            <input
+              autoComplete="tel-national"
+              className="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 font-normal outline-none transition focus:border-[#0e7490] focus:bg-white"
+              id="checkout-mobile-number"
+              inputMode="tel"
+              onChange={(event) => setPhone(event.target.value)}
+              placeholder="50 000 0000"
+              type="tel"
+              value={phone}
+            />
+          </div>
+          <p className="mt-2 text-xs leading-5 text-slate-500">
+            Select your country code, then enter the mobile number without the leading + code.
+          </p>
+        </div>
       </div>
     </fieldset>
   );
 }
 function checkoutDetailsStorageKey(email: string): string {
   return `marsa-checkout-details:${email.trim().toLowerCase()}`;
+}
+
+function formatCheckoutPhone(countryCode: string, phone: string): string {
+  return `${countryCode} ${phone.trim()}`.trim();
+}
+
+function parseCheckoutPhone(phone: string): CheckoutPhoneDetails {
+  const trimmedPhone = phone.trim();
+  const matchingCode = countryDialingCodes.find((option) =>
+    trimmedPhone.startsWith(option.code),
+  );
+  if (!matchingCode) return { countryCode: "+971", phone: trimmedPhone };
+  return {
+    countryCode: matchingCode.code,
+    phone: trimmedPhone.slice(matchingCode.code.length).trim(),
+  };
 }
 function AddressForm({
   address,

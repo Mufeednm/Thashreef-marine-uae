@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add an international country calling-code selector to checkout mobile-number entry and preserve the selected code with saved delivery details.
 - Save each signed-in customer's validated phone and delivery details in their current browser when they continue through checkout, then prefill them on the next checkout.
 - Add Stripe test-mode hosted card checkout with server-calculated product totals, protected customer sessions, pending/paid payment states, secure return verification, and a signed webhook route for final payment confirmation and email delivery.
 - Keep incomplete Stripe card-payment attempts out of the customer My Orders page; complete a server-verified successful Stripe return immediately so local testing shows a paid order and sends its confirmation email even before a public webhook is configured.
