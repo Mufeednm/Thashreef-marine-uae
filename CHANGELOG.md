@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Remove the redundant merchant-workspace status strip from administrator pages.
 - Temporarily hide online card payment in checkout and show it as coming soon while the N-Genius sandbox outlet is provisioned.
 - Replace Stripe Checkout with N-Genius Online hosted card payment, server-side return verification, and a secret-header-protected N-Genius webhook endpoint.
 - Record N-Genius Online sandbox configuration placeholders without committing test credentials.

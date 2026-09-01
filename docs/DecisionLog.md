@@ -1,5 +1,9 @@
 # Decision Log
 
+## 2026-09-01 — Remove the duplicate administrator status strip
+
+The merchant-workspace status strip added no useful control or page context and duplicated information already available within the administrator workspace. It has been removed, while the primary administration header, navigation, and logout action remain unchanged.
+
 ## 2026-09-01 — Keep card payment unavailable until N-Genius provisioning completes
 
 The checkout presents Cash on Delivery as the only selectable method and clearly labels online card payment as coming soon. The N-Genius integration remains server-side but is not reachable from the customer flow until Network provisions a valid sandbox or production outlet.

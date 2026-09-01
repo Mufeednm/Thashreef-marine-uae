@@ -19,17 +19,6 @@ export function AdminShell({
 }: AdminShellProps): ReactElement {
   return (
     <div className="min-h-screen bg-[#f6f8fb] text-slate-900">
-      <div className="border-b border-slate-200 bg-[#102846] text-white">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-between px-5 py-3 lg:px-8">
-          <p className="text-sm font-medium">Marsa Edge Marine LLC merchant workspace</p>
-          <div className="hidden items-center gap-5 text-xs text-slate-300 sm:flex">
-            <span>UAE / AED</span>
-            <span>Catalog + orders</span>
-            <span>Local SQLite mode</span>
-          </div>
-        </div>
-      </div>
-
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-5 px-5 py-5 lg:px-8">
           <div className="flex items-center gap-3">
