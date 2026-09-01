@@ -20,8 +20,11 @@ const serverEnvironmentSchema = z.object({
   SMTP_USER: z.string().trim().min(1).optional(),
   SMTP_PASSWORD: z.string().min(1).optional(),
   SMTP_FROM: z.string().trim().email().optional(),
-  STRIPE_SECRET_KEY: z.string().trim().min(1).optional(),
-  STRIPE_WEBHOOK_SECRET: z.string().trim().min(1).optional().or(z.literal("")),
+  NGENIUS_ENVIRONMENT: z.enum(["sandbox", "production"]).optional(),
+  NGENIUS_API_KEY: z.string().trim().min(1).optional(),
+  NGENIUS_OUTLET_REFERENCE: z.string().trim().min(1).optional(),
+  NGENIUS_WEBHOOK_HEADER_NAME: z.string().trim().min(1).optional(),
+  NGENIUS_WEBHOOK_SECRET: z.string().trim().min(1).optional(),
 });
 export type ServerEnvironment = z.infer<typeof serverEnvironmentSchema>;
 export function getServerEnvironment(): ServerEnvironment {

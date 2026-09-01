@@ -1,5 +1,35 @@
 # Decision Log
 
+## 2026-09-01 — Keep card payment unavailable until N-Genius provisioning completes
+
+The checkout presents Cash on Delivery as the only selectable method and clearly labels online card payment as coming soon. The N-Genius integration remains server-side but is not reachable from the customer flow until Network provisions a valid sandbox or production outlet.
+
+## 2026-08-30 — Use N-Genius hosted payment pages for card checkout
+
+Card payments now create a server-calculated pending order and redirect the customer to N-Genius Online's hosted payment page. The return page fetches the payment status from N-Genius before marking the local order paid, matching the outlet, order reference, action, currency, amount, and `PURCHASED` state. The webhook endpoint repeats this verification and requires a portal-configured secret header, so it can safely complete orders when a customer does not return.
+
+## 2026-08-30 — Keep N-Genius sandbox credentials local
+
+N-Genius Online sandbox configuration is represented by `NGENIUS_ENVIRONMENT`, `NGENIUS_API_KEY`, and `NGENIUS_OUTLET_REFERENCE`. The committed template contains placeholders only; actual sandbox and live values belong exclusively in ignored environment configuration or the deployment secret manager.
+
+## 2026-08-29 — Keep add-to-cart non-disruptive and validate phones consistently
+
+Adding an item updates the cart badge without opening the drawer. Checkout accepts only an international number with 8–15 digits after formatting, with the same rule in the browser and order/payment APIs. Missing or failed product images use the supplied marine essential asset.
+
+Admin sign-in and checkout fields retain visible labels but also use concrete placeholders, so users see an example before typing.
+
+## 2026-08-29 — Preserve non-secret local setup knowledge in the repository
+
+The project now commits `.env.example` and documents the existing local MySQL database convention in `docs/LocalDevelopment.md`. SMTP values remain placeholders only; customer OTP email requires real credentials in ignored `.env.local` or the deployment secret manager.
+
+## 2026-08-29 — Make the checkout country easy to select without restricting typing
+
+The delivery-country field uses native typed suggestions rather than a fixed select. Customers can choose a common delivery country from the list or type another valid country, while all other address fields remain direct text inputs.
+
+## 2026-08-29 — Use country-aware regional address fields
+
+UAE delivery addresses retain the Emirate selector. When a customer types or selects any other country, the same field becomes a required State / province text input and the order APIs accept that regional value. This avoids imposing UAE address terminology on international customers.
+
 ## 2026-08-27 - Stripe Checkout public return address
 
 - **Decision:** Build Stripe Checkout success and cancellation links from `NEXT_PUBLIC_APP_URL` when configured, rather than from the incoming server request.

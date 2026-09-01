@@ -12,6 +12,7 @@ import { LoginForm } from "@/features/auth/components/login-form";
 import { LanguageToggle } from "@/features/i18n/language-toggle";
 import { useLocale } from "@/features/i18n/locale-provider";
 import { CategoryNavigation } from "@/features/storefront/components/category-navigation";
+import { ProductImage } from "@/features/storefront/components/product-image";
 import { formatAedFromCents } from "@/shared/utils/currency";
 
 interface StorefrontExperienceProps {
@@ -274,7 +275,6 @@ export function StorefrontExperience({
       }
       return [...lines, { ...product, quantity: 1 }];
     });
-    setCartOpen(true);
   }
 
   function selectDepartment(matcher: string): void {
@@ -754,13 +754,13 @@ function HeroShowcase({
                     href={`/products/${product.slug}`}
                   >
                     <div className="relative aspect-[16/10] bg-white">
-                      <Image
+                      <ProductImage
                         alt={product.name}
                         className="object-contain p-2"
-                        fill
+                        height={180}
+                        imageUrl={product.imageUrl}
                         sizes="180px"
-                        src={product.imageUrl}
-                        unoptimized={product.imageUrl.startsWith("/")}
+                        width={180}
                       />
                     </div>
                     <div className="px-3 pt-2">
@@ -965,13 +965,12 @@ function ProductCard({
         className={`relative block aspect-square w-full overflow-hidden bg-gradient-to-br ${tones[index % tones.length]} text-left`}
         href={`/products/${product.slug}`}
       >
-        <Image
+        <ProductImage
           alt={name}
           className="h-full w-full object-contain p-7 transition duration-300 group-hover:scale-105"
           height={640}
+          imageUrl={product.imageUrl}
           loading={index > 3 ? "lazy" : "eager"}
-          src={product.imageUrl}
-          unoptimized={product.imageUrl.startsWith("/")}
           width={640}
         />
         <div className="absolute left-4 top-4 rounded-full bg-[#0a2540] px-3 py-1 text-[10px] font-black text-white shadow-sm">
@@ -1155,38 +1154,47 @@ function CartDrawer({
             </p>
           ) : (
             cart.map((line) => (
-              <div className="rounded-2xl border border-slate-200 p-4" key={line.id}>
-                <p className="text-sm font-black text-[#0a2540]">{line.name}</p>
-                <p className="mt-1 text-sm font-bold text-[#0e7490]">
-                  {formatAedFromCents(line.priceAedCents)}
-                </p>
-                <div className="mt-3 flex items-center justify-between">
-                  <div className="flex items-center rounded-full border border-slate-200">
+              <div className="flex gap-3 rounded-2xl border border-slate-200 p-4" key={line.id}>
+                <ProductImage
+                  alt={line.name}
+                  className="size-16 shrink-0 rounded-xl bg-slate-50 object-contain p-1"
+                  height={64}
+                  imageUrl={line.imageUrl}
+                  width={64}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-black text-[#0a2540]">{line.name}</p>
+                  <p className="mt-1 text-sm font-bold text-[#0e7490]">
+                    {formatAedFromCents(line.priceAedCents)}
+                  </p>
+                  <div className="mt-3 flex items-center justify-between">
+                    <div className="flex items-center rounded-full border border-slate-200">
+                      <button
+                        aria-label={`Decrease ${line.name} quantity`}
+                        className="size-10 font-bold"
+                        onClick={() => updateQuantity(line.id, -1)}
+                        type="button"
+                      >
+                        -
+                      </button>
+                      <span className="w-8 text-center text-sm font-bold">{line.quantity}</span>
+                      <button
+                        aria-label={`Increase ${line.name} quantity`}
+                        className="size-10 font-bold"
+                        onClick={() => updateQuantity(line.id, 1)}
+                        type="button"
+                      >
+                        +
+                      </button>
+                    </div>
                     <button
-                      aria-label={`Decrease ${line.name} quantity`}
-                      className="size-10 font-bold"
-                      onClick={() => updateQuantity(line.id, -1)}
+                      className="text-xs font-bold text-rose-700"
+                      onClick={() => updateQuantity(line.id, -line.quantity)}
                       type="button"
                     >
-                      -
-                    </button>
-                    <span className="w-8 text-center text-sm font-bold">{line.quantity}</span>
-                    <button
-                      aria-label={`Increase ${line.name} quantity`}
-                      className="size-10 font-bold"
-                      onClick={() => updateQuantity(line.id, 1)}
-                      type="button"
-                    >
-                      +
+                      Remove
                     </button>
                   </div>
-                  <button
-                    className="text-xs font-bold text-rose-700"
-                    onClick={() => updateQuantity(line.id, -line.quantity)}
-                    type="button"
-                  >
-                    Remove
-                  </button>
                 </div>
               </div>
             ))
@@ -1251,12 +1259,11 @@ export function ProductDetail({
             <p className="text-xs font-black tracking-widest text-[#0e7490] uppercase">
               {product.category}
             </p>
-            <Image
+            <ProductImage
               alt={product.name}
               className="mx-auto mt-8 h-64 w-full object-contain"
               height={640}
-              src={product.imageUrl}
-              unoptimized={product.imageUrl.startsWith("/")}
+              imageUrl={product.imageUrl}
               width={640}
             />
           </div>

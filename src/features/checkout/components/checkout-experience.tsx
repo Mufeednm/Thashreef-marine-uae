@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { z } from "zod";
 import { formatAedFromCents } from "@/shared/utils/currency";
+import { digitsOnly, isValidNationalPhone } from "@/shared/utils/phone";
 
 interface StoredLine {
   id: string;
@@ -45,6 +46,18 @@ const countryDialingCodes = [
   { code: "+39", country: "Italy" },
   { code: "+27", country: "South Africa" },
 ] as const;
+const deliveryCountries = countryDialingCodes
+  .map((option) => option.country)
+  .filter((country, index, countries) => countries.indexOf(country) === index);
+const uaeEmirates = [
+  "Dubai",
+  "Abu Dhabi",
+  "Sharjah",
+  "Ajman",
+  "Ras Al Khaimah",
+  "Fujairah",
+  "Umm Al Quwain",
+] as const;
 const savedCheckoutDetailsSchema = z.object({
   address: z.object({
     apartment: z.string().max(120),
@@ -55,18 +68,10 @@ const savedCheckoutDetailsSchema = z.object({
     street: z.string().max(180),
     zip: z.string().max(40),
   }),
-  emirate: z.enum([
-    "Dubai",
-    "Abu Dhabi",
-    "Sharjah",
-    "Ajman",
-    "Ras Al Khaimah",
-    "Fujairah",
-    "Umm Al Quwain",
-  ]),
+  emirate: z.string().trim().min(2).max(120),
   countryCode: z.string().regex(/^\+\d{1,4}$/),
   phone: z.string().max(32),
-  version: z.literal(2),
+  version: z.literal(3),
 });
 const steps = ["Customer", "Delivery", "Review", "Payment"] as const;
 
@@ -81,10 +86,10 @@ export function CheckoutExperience({
   const [emailDelivery, setEmailDelivery] = useState<"failed" | "not-configured" | "sent" | null>(
     null,
   );
-  const [payment, setPayment] = useState<"cod" | "stripe">("stripe");
   const initialPhone = parseCheckoutPhone(customer.phone);
   const [countryCode, setCountryCode] = useState(initialPhone.countryCode);
   const [phone, setPhone] = useState(initialPhone.phone);
+  const [phoneTouched, setPhoneTouched] = useState(false);
   const [emirate, setEmirate] = useState("Dubai");
   const [address, setAddress] = useState<DeliveryAddress>({
     apartment: "",
@@ -141,8 +146,8 @@ export function CheckoutExperience({
     );
 
   function validationMessage(currentStep: number): string | null {
-    if (currentStep === 0 && phone.replace(/\D/g, "").length < 7) {
-      return "Enter a valid mobile number before continuing.";
+    if (currentStep === 0 && !isValidNationalPhone(countryCode, phone)) {
+      return "Enter 7 to 15 digits in your mobile number, including the country code.";
     }
     if (currentStep === 1) {
       const missingAddressDetail = [
@@ -153,7 +158,7 @@ export function CheckoutExperience({
         address.street,
       ].some((value) => !value.trim());
       if (missingAddressDetail || !emirate.trim()) {
-        return "Complete your country, emirate, city, area, building, and street before continuing.";
+        return `Complete your country, ${regionLabel(address.country).toLowerCase()}, city, area, building, and street before continuing.`;
       }
     }
     if (currentStep === 2 && lines.length === 0) return "Your basket is empty.";
@@ -163,7 +168,7 @@ export function CheckoutExperience({
   function saveCheckoutDetails(): void {
     window.localStorage.setItem(
       checkoutDetailsStorageKey(customer.email),
-      JSON.stringify({ address, countryCode, emirate, phone, version: 2 }),
+      JSON.stringify({ address, countryCode, emirate, phone, version: 3 }),
     );
     setDetailsSaved(true);
   }
@@ -190,36 +195,24 @@ export function CheckoutExperience({
       ]
         .filter(Boolean)
         .join(", ");
-      const response = await fetch(
-        payment === "stripe" ? "/api/payments/stripe/checkout" : "/api/orders",
-        {
+      const response = await fetch("/api/orders", {
           body: JSON.stringify({
             deliveryAddress,
             emirate,
             lines: lines.map((line) => ({ productId: line.id, quantity: line.quantity })),
-            ...(payment === "cod" ? { paymentMethod: payment } : {}),
+            paymentMethod: "cod",
             phone: formatCheckoutPhone(countryCode, phone),
           }),
           headers: { "Content-Type": "application/json" },
           method: "POST",
-        },
-      );
+        });
       const body = (await response.json().catch(() => ({}))) as {
-        checkoutUrl?: string;
         emailDelivery?: "failed" | "not-configured" | "sent";
         message?: string;
         orderId?: number;
       };
       if (!response.ok) {
         setError(body.message ?? "Your order could not be saved. Please try again.");
-        return;
-      }
-      if (payment === "stripe") {
-        if (!body.checkoutUrl) {
-          setError("We could not open secure card payment. Please try again.");
-          return;
-        }
-        window.location.assign(body.checkoutUrl);
         return;
       }
       setEmailDelivery(body.emailDelivery ?? "not-configured");
@@ -265,8 +258,10 @@ export function CheckoutExperience({
                 countryCode={countryCode}
                 detailsSaved={detailsSaved}
                 phone={phone}
+                phoneTouched={phoneTouched}
                 setCountryCode={setCountryCode}
                 setPhone={setPhone}
+                setPhoneTouched={setPhoneTouched}
               />
             ) : null}
             {step === 1 ? (
@@ -278,7 +273,7 @@ export function CheckoutExperience({
               />
             ) : null}
             {step === 2 ? <Review lines={lines} /> : null}
-            {step === 3 ? <Payment payment={payment} setPayment={setPayment} /> : null}
+            {step === 3 ? <Payment /> : null}
             {error ? (
               <p
                 aria-live="polite"
@@ -316,12 +311,8 @@ export function CheckoutExperience({
               >
                 {step === 3
                   ? submitting
-                    ? payment === "stripe"
-                      ? "Opening secure payment..."
-                      : "Placing order..."
-                    : payment === "stripe"
-                      ? "Pay securely"
-                      : "Place order"
+                    ? "Placing order..."
+                    : "Place order"
                   : "Continue"}
               </button>
             </div>
@@ -337,16 +328,22 @@ function CustomerForm({
   countryCode,
   detailsSaved,
   phone,
+  phoneTouched,
   setCountryCode,
   setPhone,
+  setPhoneTouched,
 }: {
   customer: { name: string; email: string; phone: string };
   countryCode: string;
   detailsSaved: boolean;
   phone: string;
+  phoneTouched: boolean;
   setCountryCode: (value: string) => void;
   setPhone: (value: string) => void;
+  setPhoneTouched: (value: boolean) => void;
 }): ReactElement {
+  const isPhoneValid = isValidNationalPhone(countryCode, phone);
+  const maxPhoneDigits = 15 - digitsOnly(countryCode).length;
   return (
     <fieldset>
       <legend className="text-2xl font-black">Customer details</legend>
@@ -359,8 +356,19 @@ function CustomerForm({
         </p>
       ) : null}
       <div className="mt-6 grid gap-5 sm:grid-cols-2">
-        <Field defaultValue={customer.name} label="Full name" name="name" />
-        <Field defaultValue={customer.email} label="Email" name="email" type="email" />
+        <Field
+          defaultValue={customer.name}
+          label="Full name"
+          name="name"
+          placeholder="Your full name"
+        />
+        <Field
+          defaultValue={customer.email}
+          label="Email"
+          name="email"
+          placeholder="name@example.com"
+          type="email"
+        />
         <div className="sm:col-span-2">
           <span className="block text-sm font-bold text-slate-700">Mobile number</span>
           <div className="mt-2 grid gap-3 sm:grid-cols-[minmax(210px,0.8fr)_minmax(0,1.2fr)]">
@@ -388,15 +396,25 @@ function CustomerForm({
               className="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 font-normal outline-none transition focus:border-[#0e7490] focus:bg-white"
               id="checkout-mobile-number"
               inputMode="tel"
-              onChange={(event) => setPhone(event.target.value)}
-              placeholder="50 000 0000"
+              maxLength={maxPhoneDigits}
+              onBlur={() => setPhoneTouched(true)}
+              onChange={(event) =>
+                setPhone(digitsOnly(event.target.value).slice(0, maxPhoneDigits))
+              }
+              placeholder="500000000"
               type="tel"
               value={phone}
             />
           </div>
           <p className="mt-2 text-xs leading-5 text-slate-500">
-            Select your country code, then enter the mobile number without the leading + code.
+            Select your country code, then enter 7–{maxPhoneDigits} digits without the leading +
+            code.
           </p>
+          {phoneTouched && !isPhoneValid ? (
+            <p className="mt-2 text-sm font-medium text-rose-700" role="alert">
+              Enter a valid mobile number with 7 to {maxPhoneDigits} digits.
+            </p>
+          ) : null}
         </div>
       </div>
     </fieldset>
@@ -412,9 +430,7 @@ function formatCheckoutPhone(countryCode: string, phone: string): string {
 
 function parseCheckoutPhone(phone: string): CheckoutPhoneDetails {
   const trimmedPhone = phone.trim();
-  const matchingCode = countryDialingCodes.find((option) =>
-    trimmedPhone.startsWith(option.code),
-  );
+  const matchingCode = countryDialingCodes.find((option) => trimmedPhone.startsWith(option.code));
   if (!matchingCode) return { countryCode: "+971", phone: trimmedPhone };
   return {
     countryCode: matchingCode.code,
@@ -434,6 +450,17 @@ function AddressForm({
 }): ReactElement {
   const update = (name: keyof DeliveryAddress, value: string) =>
     setAddress({ ...address, [name]: value });
+  const isUae = isUnitedArabEmirates(address.country);
+
+  function updateCountry(country: string): void {
+    setAddress({ ...address, country });
+    if (isUnitedArabEmirates(country)) {
+      setEmirate(uaeEmirates.includes(emirate as (typeof uaeEmirates)[number]) ? emirate : "Dubai");
+    } else {
+      setEmirate("");
+    }
+  }
+
   return (
     <fieldset>
       <legend className="text-2xl font-black">Shipping address</legend>
@@ -442,36 +469,22 @@ function AddressForm({
         accurately.
       </p>
       <div className="mt-6 grid gap-5 sm:grid-cols-2">
-        <AddressField label="Country" name="country" update={update} value={address.country} />
-        <label className="block text-sm font-bold text-slate-700">
-          Emirate
-          <select
-            className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 font-normal outline-none focus:border-[#0e7490]"
-            onChange={(event) => setEmirate(event.target.value)}
-            value={emirate}
-          >
-            {[
-              "Dubai",
-              "Abu Dhabi",
-              "Sharjah",
-              "Ajman",
-              "Ras Al Khaimah",
-              "Fujairah",
-              "Umm Al Quwain",
-            ].map((option) => (
-              <option key={option}>{option}</option>
-            ))}
-          </select>
-        </label>
+        <CountryField onCountryChange={updateCountry} value={address.country} />
+        <RegionField isUae={isUae} region={emirate} setRegion={setEmirate} />
         <AddressField label="City" name="city" update={update} value={address.city} />
-        <AddressField label="Area" name="area" update={update} value={address.area} />
+        <AddressField label="Area / locality" name="area" update={update} value={address.area} />
         <AddressField
-          label="Building / villa"
+          label="Building / house number"
           name="building"
           update={update}
           value={address.building}
         />
-        <AddressField label="Street" name="street" update={update} value={address.street} />
+        <AddressField
+          label="Street / address line 1"
+          name="street"
+          update={update}
+          value={address.street}
+        />
         <AddressField
           label="Apartment (optional)"
           name="apartment"
@@ -490,6 +503,70 @@ function AddressForm({
     </fieldset>
   );
 }
+
+function CountryField({
+  onCountryChange,
+  value,
+}: {
+  onCountryChange: (value: string) => void;
+  value: string;
+}): ReactElement {
+  return (
+    <label className="block text-sm font-bold text-slate-700">
+      Country
+      <input
+        className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 font-normal outline-none transition focus:border-[#0e7490] focus:bg-white"
+        list="checkout-delivery-countries"
+        onChange={(event) => onCountryChange(event.target.value)}
+        placeholder="Type or select a country"
+        required
+        value={value}
+      />
+      <datalist id="checkout-delivery-countries">
+        {deliveryCountries.map((country) => (
+          <option key={country} value={country} />
+        ))}
+      </datalist>
+    </label>
+  );
+}
+
+function RegionField({
+  isUae,
+  region,
+  setRegion,
+}: {
+  isUae: boolean;
+  region: string;
+  setRegion: (value: string) => void;
+}): ReactElement {
+  const label = isUae ? "Emirate" : "State / province";
+  return (
+    <label className="block text-sm font-bold text-slate-700">
+      {label}
+      {isUae ? (
+        <select
+          className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 font-normal outline-none focus:border-[#0e7490]"
+          onChange={(event) => setRegion(event.target.value)}
+          value={region || "Dubai"}
+        >
+          {uaeEmirates.map((option) => (
+            <option key={option}>{option}</option>
+          ))}
+        </select>
+      ) : (
+        <input
+          className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 font-normal outline-none transition focus:border-[#0e7490] focus:bg-white"
+          onChange={(event) => setRegion(event.target.value)}
+          placeholder="e.g. Maharashtra"
+          required
+          value={region}
+        />
+      )}
+    </label>
+  );
+}
+
 function AddressField({
   label,
   name,
@@ -509,11 +586,33 @@ function AddressField({
       <input
         className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 font-normal outline-none transition focus:border-[#0e7490] focus:bg-white"
         onChange={(event) => update(name, event.target.value)}
+        placeholder={addressPlaceholder(name)}
         required={required}
         value={value}
       />
     </label>
   );
+}
+
+function addressPlaceholder(name: keyof DeliveryAddress): string {
+  const placeholders: Record<keyof DeliveryAddress, string> = {
+    apartment: "Apartment or unit number",
+    area: "e.g. Al Jaddaf",
+    building: "Building or villa name/number",
+    city: "e.g. Dubai",
+    country: "e.g. United Arab Emirates",
+    street: "Street name and number",
+    zip: "Postal or ZIP code",
+  };
+  return placeholders[name];
+}
+
+function isUnitedArabEmirates(country: string): boolean {
+  return ["uae", "united arab emirates"].includes(country.trim().toLowerCase());
+}
+
+function regionLabel(country: string): "Emirate" | "State / province" {
+  return isUnitedArabEmirates(country) ? "Emirate" : "State / province";
 }
 function Review({ lines }: { lines: StoredLine[] }): ReactElement {
   return (
@@ -539,47 +638,23 @@ function Review({ lines }: { lines: StoredLine[] }): ReactElement {
     </fieldset>
   );
 }
-function Payment({
-  payment,
-  setPayment,
-}: {
-  payment: "cod" | "stripe";
-  setPayment: (value: "cod" | "stripe") => void;
-}): ReactElement {
+function Payment(): ReactElement {
   return (
     <fieldset>
       <legend className="text-2xl font-black">Payment method</legend>
       <p className="mt-2 text-sm text-slate-500">
-        Pay securely by card through Stripe, or choose Cash on Delivery for UAE orders.
+        Cash on Delivery is available for UAE orders.
       </p>
-      <label className="mt-6 flex gap-3 rounded-2xl border border-[#0e7490] bg-cyan-50 p-4">
-        <input
-          checked={payment === "stripe"}
-          name="payment"
-          onChange={() => setPayment("stripe")}
-          type="radio"
-          value="stripe"
-        />
-        <span>
-          <b>Card payment</b>
-          <small className="mt-1 block text-slate-500">
-            Secure Stripe checkout. Test mode is active; no real payment is taken.
-          </small>
-        </span>
-      </label>
-      <label className="mt-3 flex gap-3 rounded-2xl border border-slate-200 p-4">
-        <input
-          checked={payment === "cod"}
-          name="payment"
-          onChange={() => setPayment("cod")}
-          type="radio"
-          value="cod"
-        />
+      <div className="mt-6 flex gap-3 rounded-2xl border border-[#0e7490] bg-cyan-50 p-4">
+        <input aria-label="Cash on Delivery selected" checked readOnly type="radio" />
         <span>
           <b>Cash on Delivery</b>
           <small className="mt-1 block text-slate-500">Pay when your UAE order arrives.</small>
         </span>
-      </label>
+      </div>
+      <p className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600" role="status">
+        Online card payment is coming soon. You can place your order now with Cash on Delivery.
+      </p>
     </fieldset>
   );
 }
@@ -629,11 +704,13 @@ function Field({
   defaultValue,
   label,
   name,
+  placeholder,
   type = "text",
 }: {
   defaultValue?: string;
   label: string;
   name: string;
+  placeholder?: string;
   type?: string;
 }): ReactElement {
   return (
@@ -643,6 +720,7 @@ function Field({
         className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 font-normal outline-none transition focus:border-[#0e7490] focus:bg-white"
         defaultValue={defaultValue}
         name={name}
+        placeholder={placeholder}
         required={!label.includes("optional")}
         type={type}
       />

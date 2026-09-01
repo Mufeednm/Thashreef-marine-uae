@@ -42,6 +42,7 @@ export interface AdminOrder extends AdminRecentOrder {
   paymentMethod: string;
   paymentStatus: "not_required" | "paid" | "pending" | "failed";
   shippingZone: string;
+  paymentReference: string | null;
 }
 
 export interface AdminOrderDetail extends AdminOrder {
@@ -161,7 +162,9 @@ export interface DemoStoreRepository {
   listRecentOrders(limit: number): Promise<AdminRecentOrder[]>;
   listOrders(limit: number): Promise<AdminOrder[]>;
   getOrderDetail(id: number): Promise<AdminOrderDetail | null>;
-  markStripeOrderPaid(id: number, checkoutSessionId: string): Promise<boolean>;
+  attachNgeniusOrderReference(id: number, reference: string): Promise<boolean>;
+  findOrderByNgeniusReference(reference: string): Promise<AdminOrderDetail | null>;
+  markNgeniusOrderPaid(id: number, reference: string): Promise<boolean>;
   updateOrderStatus(id: number, status: "accepted" | "rejected"): Promise<void>;
   updateBrand(id: number, input: Omit<Brand, "id" | "slug">): Promise<Brand | null>;
   updateCategory(

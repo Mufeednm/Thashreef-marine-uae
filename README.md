@@ -4,6 +4,8 @@ Production-oriented e-commerce platform foundation built with Next.js App Router
 
 ## Local demo
 
+For the complete project-specific local setup, including the existing phpMyAdmin database name and SMTP requirement for customer OTPs, read [Local development setup](docs/LocalDevelopment.md).
+
 The current local testing console is branded as `Marsa Edge Marine LLC`. It includes:
 
 - cookie-based sign-in backed by MySQL

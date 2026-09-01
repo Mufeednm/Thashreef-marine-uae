@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Temporarily hide online card payment in checkout and show it as coming soon while the N-Genius sandbox outlet is provisioned.
+- Replace Stripe Checkout with N-Genius Online hosted card payment, server-side return verification, and a secret-header-protected N-Genius webhook endpoint.
+- Record N-Genius Online sandbox configuration placeholders without committing test credentials.
+- Stop automatically opening the cart after adding an item.
+- Add registration name guidance, checkout mobile-number validation, and a product-image fallback.
+- Add missing placeholders to the admin sign-in and checkout fields.
+- Add a committed environment template and a project-specific local-development guide for MySQL and SMTP setup.
+- Make the checkout delivery-country field searchable while keeping the remaining address details as typed inputs.
+- Make the checkout regional field country-aware: Emirate for UAE and typed state/province elsewhere.
+
 - Use the configured public website address for Stripe Checkout return links, preventing Hostinger's internal server address from appearing after successful payment.
 - Add an international country calling-code selector to checkout mobile-number entry and preserve the selected code with saved delivery details.
 - Save each signed-in customer's validated phone and delivery details in their current browser when they continue through checkout, then prefill them on the next checkout.

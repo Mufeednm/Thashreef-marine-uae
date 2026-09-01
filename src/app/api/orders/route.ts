@@ -7,23 +7,16 @@ import {
   sendOrderConfirmationEmail,
   type OrderEmailDelivery,
 } from "@/infrastructure/email/smtp-order-email-sender";
+import { isValidInternationalPhone } from "@/shared/utils/phone";
 
 const orderSchema = z.object({
   deliveryAddress: z.string().trim().min(8).max(600),
-  emirate: z.enum([
-    "Dubai",
-    "Abu Dhabi",
-    "Sharjah",
-    "Ajman",
-    "Ras Al Khaimah",
-    "Fujairah",
-    "Umm Al Quwain",
-  ]),
-  paymentMethod: z.enum(["cod", "card", "stripe", "uae"]),
+  emirate: z.string().trim().min(2).max(120),
+  paymentMethod: z.enum(["cod", "card", "ngenius", "uae"]),
   phone: z
     .string()
     .trim()
-    .regex(/^[+0-9][0-9 ()-]{5,30}$/, "Enter a valid mobile number."),
+    .refine(isValidInternationalPhone, "Enter a valid mobile number with 8 to 15 digits."),
   lines: z
     .array(
       z.object({

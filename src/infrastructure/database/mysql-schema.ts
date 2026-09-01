@@ -73,7 +73,7 @@ export async function initializeMySqlSchema(database: Sequelize): Promise<void> 
       status VARCHAR(32) NOT NULL, shipping_zone VARCHAR(128) NOT NULL, currency CHAR(3) NOT NULL,
       subtotal_aed_cents INT NOT NULL, shipping_fee_aed_cents INT NOT NULL, total_aed_cents INT NOT NULL,
       payment_method VARCHAR(64) NOT NULL, payment_status VARCHAR(32) NOT NULL DEFAULT 'not_required',
-      stripe_checkout_session_id VARCHAR(255) NULL, delivery_address TEXT NULL, INDEX orders_customer_profile_id_idx (customer_profile_id),
+      ngenius_order_reference VARCHAR(255) NULL, delivery_address TEXT NULL, INDEX orders_customer_profile_id_idx (customer_profile_id),
       INDEX orders_order_date_idx (order_date)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
     `CREATE TABLE IF NOT EXISTS order_items (
@@ -117,12 +117,12 @@ export async function initializeMySqlSchema(database: Sequelize): Promise<void> 
       "ALTER TABLE orders ADD COLUMN payment_status VARCHAR(32) NOT NULL DEFAULT 'not_required' AFTER payment_method",
     );
   }
-  const [orderStripeSessionColumn] = await database.query(
-    "SHOW COLUMNS FROM orders LIKE 'stripe_checkout_session_id'",
+  const [orderNgeniusReferenceColumn] = await database.query(
+    "SHOW COLUMNS FROM orders LIKE 'ngenius_order_reference'",
   );
-  if (Array.isArray(orderStripeSessionColumn) && orderStripeSessionColumn.length === 0) {
+  if (Array.isArray(orderNgeniusReferenceColumn) && orderNgeniusReferenceColumn.length === 0) {
     await database.query(
-      "ALTER TABLE orders ADD COLUMN stripe_checkout_session_id VARCHAR(255) NULL AFTER payment_status",
+      "ALTER TABLE orders ADD COLUMN ngenius_order_reference VARCHAR(255) NULL AFTER payment_status",
     );
   }
   const [orderItemImageColumn] = await database.query(

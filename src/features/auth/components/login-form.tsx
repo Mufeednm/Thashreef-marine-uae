@@ -45,6 +45,7 @@ function AdminLoginForm({ redirectTo }: { redirectTo?: string }): ReactElement {
         error={state.fieldErrors?.identifier?.[0]}
         label="Username"
         name="identifier"
+        placeholder="Enter your username"
         type="text"
         autoComplete="username"
       />
@@ -52,6 +53,7 @@ function AdminLoginForm({ redirectTo }: { redirectTo?: string }): ReactElement {
         error={state.fieldErrors?.password?.[0]}
         label="Password"
         name="password"
+        placeholder="Enter your password"
         type="password"
         autoComplete="current-password"
       />
@@ -138,6 +140,7 @@ function CustomerOtpForm({
               type="text"
               autoComplete="name"
               defaultValue={state.values?.name}
+              placeholder="Your full name"
             />
           ) : (
             <input name="name" type="hidden" value="" />

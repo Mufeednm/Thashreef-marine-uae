@@ -2,6 +2,8 @@
 
 # Project Development Rules
 
+- Before starting or diagnosing the local application, read `docs/LocalDevelopment.md`. It contains the non-secret local database convention and the required SMTP setup for customer OTPs.
+
 - TypeScript stays strict; do not introduce `any` without a documented exception.
 - UI components do not contain business logic. Use `src/application`, `src/domain`, and `src/infrastructure` boundaries.
 - Organize future features in `src/features/<feature>` and validate all external input with Zod.
