@@ -24,6 +24,7 @@ interface StorefrontExperienceProps {
 }
 
 type CartLine = Product & { quantity: number };
+type ProductSort = "featured" | "newest" | "price-high" | "price-low";
 
 interface HeroSlide {
   accent: string;
@@ -127,6 +128,7 @@ export function StorefrontExperience({
 }: StorefrontExperienceProps): ReactElement {
   const shouldReduceMotion = useReducedMotion();
   const [query, setQuery] = useState("");
+  const [productSort, setProductSort] = useState<ProductSort>("featured");
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | "all">("all");
   const [activeSlide, setActiveSlide] = useState(0);
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -134,6 +136,7 @@ export function StorefrontExperience({
   const [cartOpen, setCartOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [addedProductName, setAddedProductName] = useState<string | null>(null);
   const slides = useMemo<HeroSlide[]>(
     () =>
       banners.length > 0
@@ -175,18 +178,10 @@ export function StorefrontExperience({
     getDescendantCategoryIds(categoryLookup.get(categoryId)).some((id) =>
       assignedCategoryIds.has(id),
     );
-  const brandNames = useMemo(
-    () =>
-      (brands.length > 0
-        ? brands.map((brand) => brand.name)
-        : Array.from(new Set(products.map((product) => product.brand)))
-      ).slice(0, 12),
-    [brands, products],
-  );
   const filteredProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return products.filter(
+    const matchingProducts = products.filter(
       (product) =>
         (!selectedCategoryIds || selectedCategoryIds.has(product.categoryId)) &&
         (!normalizedQuery ||
@@ -195,7 +190,14 @@ export function StorefrontExperience({
           product.category.toLowerCase().includes(normalizedQuery) ||
           product.mainCategory?.toLowerCase().includes(normalizedQuery)),
     );
-  }, [products, query, selectedCategoryIds]);
+
+    return [...matchingProducts].sort((left, right) => {
+      if (productSort === "newest") return right.createdAt.localeCompare(left.createdAt);
+      if (productSort === "price-low") return left.priceAedCents - right.priceAedCents;
+      if (productSort === "price-high") return right.priceAedCents - left.priceAedCents;
+      return left.homepageOrder - right.homepageOrder;
+    });
+  }, [productSort, products, query, selectedCategoryIds]);
   const bestSellers = useMemo(
     () =>
       products.some((product) => product.isTopSelling)
@@ -219,17 +221,12 @@ export function StorefrontExperience({
     [products],
   );
   const recentlyAdded = newArrivals.slice(0, 8);
-  const recommendedProducts = useMemo(
-    () =>
-      [...products].sort((left, right) => right.priceAedCents - left.priceAedCents).slice(0, 10),
-    [products],
-  );
-  const topBrandProducts = useMemo(() => {
-    const selectedBrands = new Set(brandNames.slice(0, 6));
-    return products.filter((product) => selectedBrands.has(product.brand)).slice(0, 10);
-  }, [brandNames, products]);
   const cartQuantity = cart.reduce((total, line) => total + line.quantity, 0);
   const cartTotal = cart.reduce((total, line) => total + line.priceAedCents * line.quantity, 0);
+  const cartQuantityByProductId = useMemo(
+    () => new Map(cart.map((line) => [line.id, line.quantity])),
+    [cart],
+  );
   const slide = slides[activeSlide % slides.length] ?? heroSlides[0];
 
   useEffect(() => {
@@ -265,6 +262,12 @@ export function StorefrontExperience({
     window.sessionStorage.setItem("thashreef-cart", JSON.stringify(cart));
   }, [cart, cartHydrated]);
 
+  useEffect(() => {
+    if (!addedProductName) return;
+    const timer = window.setTimeout(() => setAddedProductName(null), 3500);
+    return () => window.clearTimeout(timer);
+  }, [addedProductName]);
+
   function addToCart(product: Product): void {
     setCart((lines) => {
       const existing = lines.find((line) => line.id === product.id);
@@ -275,6 +278,7 @@ export function StorefrontExperience({
       }
       return [...lines, { ...product, quantity: 1 }];
     });
+    setAddedProductName(product.name);
   }
 
   function selectDepartment(matcher: string): void {
@@ -319,7 +323,6 @@ export function StorefrontExperience({
       >
         Skip to products
       </a>
-      <TopBar />
       <Header
         accountName={accountName}
         cartQuantity={cartQuantity}
@@ -355,13 +358,7 @@ export function StorefrontExperience({
 
         <ProductCarousel
           addToCart={addToCart}
-          eyebrow="Editor picks"
-          products={recommendedProducts}
-          subtitle="High-utility accessories with strong availability and polished product cards."
-          title="Recommended Products"
-        />
-        <ProductCarousel
-          addToCart={addToCart}
+          cartQuantityByProductId={cartQuantityByProductId}
           eyebrow="Fast movers"
           products={bestSellers}
           subtitle="Commonly needed items for retail counters, crews and service workshops."
@@ -369,33 +366,11 @@ export function StorefrontExperience({
         />
         <ProductCarousel
           addToCart={addToCart}
+          cartQuantityByProductId={cartQuantityByProductId}
           eyebrow="Fresh arrivals"
           products={newArrivals}
           subtitle="Recently added products from the Marsa Edge Marine LLC catalogue."
           title="New Arrivals"
-        />
-
-        <ProductCarousel
-          addToCart={addToCart}
-          eyebrow="Trusted labels"
-          products={topBrandProducts.length > 0 ? topBrandProducts : products.slice(0, 10)}
-          subtitle="Product rails grouped around the brands customers already ask for."
-          title="Top Brands"
-        />
-
-        <ProductCarousel
-          addToCart={addToCart}
-          eyebrow="Latest catalogue"
-          products={recentlyAdded}
-          subtitle="A quick rail for new or recently updated marine accessories."
-          title="Recently Added"
-        />
-        <ProductCarousel
-          addToCart={addToCart}
-          eyebrow="Smart picks"
-          products={recommendedProducts}
-          subtitle="Balanced recommendations across safety, electrical, anchoring and daily accessories."
-          title="Recommended for You"
         />
 
         <section className="border-y border-slate-200 bg-white py-12" id="catalog">
@@ -413,7 +388,7 @@ export function StorefrontExperience({
                   {selectedCategoryName.toLowerCase()}. Search by brand, category or product name.
                 </p>
               </div>
-              <div className="flex max-w-4xl flex-wrap gap-2">
+              <div className="flex max-w-4xl flex-wrap items-center gap-2">
                 <button
                   className={`min-h-11 rounded-full px-4 text-xs font-black transition ${
                     selectedCategoryId === "all"
@@ -442,6 +417,21 @@ export function StorefrontExperience({
                       {category.name}
                     </button>
                   ))}
+                <label className="ml-auto flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600">
+                  <span className="sr-only">Sort products</span>
+                  Sort
+                  <select
+                    aria-label="Sort products"
+                    className="bg-transparent font-black text-[#0a2540] outline-none"
+                    onChange={(event) => setProductSort(event.target.value as ProductSort)}
+                    value={productSort}
+                  >
+                    <option value="featured">Featured</option>
+                    <option value="newest">Newest</option>
+                    <option value="price-low">Price: low to high</option>
+                    <option value="price-high">Price: high to low</option>
+                  </select>
+                </label>
               </div>
             </div>
             {filteredProducts.length > 0 ? (
@@ -449,7 +439,9 @@ export function StorefrontExperience({
                 {filteredProducts.slice(0, 15).map((product, index) => (
                   <ProductCard
                     addToCart={addToCart}
+                    cartQuantity={cartQuantityByProductId.get(product.id) ?? 0}
                     index={index}
+                    isJustAdded={addedProductName === product.name}
                     key={product.id}
                     product={product}
                   />
@@ -477,6 +469,10 @@ export function StorefrontExperience({
       </main>
 
       <Footer />
+
+      <p aria-live="polite" className="sr-only">
+        {addedProductName ? `${addedProductName} added to your cart.` : ""}
+      </p>
 
       <a
         aria-label="Contact Marsa Edge Marine LLC on WhatsApp"
@@ -508,14 +504,6 @@ export function StorefrontExperience({
         ) : null}
         {loginOpen ? <LoginModal close={() => setLoginOpen(false)} /> : null}
       </AnimatePresence>
-    </div>
-  );
-}
-
-function TopBar(): ReactElement {
-  return (
-    <div className="bg-[#071827] px-4 py-2 text-center text-xs font-semibold text-white">
-      Marsa Edge Marine LLC | Marine spare parts, solutions, UAE dispatch and GCC shipment support
     </div>
   );
 }
@@ -636,6 +624,16 @@ function Header({
           ) : null}
         </button>
       </div>
+      <label className="relative mx-4 mb-3 flex min-h-11 items-center rounded-full border border-slate-200 bg-slate-50 px-4 transition focus-within:border-[#0e7490] focus-within:bg-white focus-within:shadow-sm sm:hidden">
+        <SearchIcon />
+        <span className="sr-only">{t("header.search")}</span>
+        <input
+          className="min-w-0 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-slate-400"
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={t("header.search")}
+          value={query}
+        />
+      </label>
       <div className="hidden xl:block">
         <CategoryNavigation
           categories={categoryTree}
@@ -863,12 +861,14 @@ function CategoryCarousel({
 
 function ProductCarousel({
   addToCart,
+  cartQuantityByProductId,
   eyebrow,
   products,
   subtitle,
   title,
 }: {
   addToCart: (product: Product) => void;
+  cartQuantityByProductId: Map<string, number>;
   eyebrow: string;
   products: Product[];
   subtitle: string;
@@ -885,7 +885,12 @@ function ProductCarousel({
               key={product.id}
               whileHover={{ y: -5 }}
             >
-              <ProductCard addToCart={addToCart} index={index} product={product} />
+              <ProductCard
+                addToCart={addToCart}
+                cartQuantity={cartQuantityByProductId.get(product.id) ?? 0}
+                index={index}
+                product={product}
+              />
             </motion.div>
           ))}
         </div>
@@ -935,11 +940,15 @@ function SkeletonRail(): ReactElement {
 
 function ProductCard({
   addToCart,
+  cartQuantity = 0,
   index,
+  isJustAdded = false,
   product,
 }: {
   addToCart: (product: Product) => void;
+  cartQuantity?: number;
   index: number;
+  isJustAdded?: boolean;
   product: Product;
 }): ReactElement {
   const { locale } = useLocale();
@@ -999,13 +1008,25 @@ function ProductCard({
               </p>
             ) : null}
           </div>
+          {product.salePriceAedCents ? (
+            <span className="rounded-full bg-orange-50 px-2 py-1 text-[10px] font-black text-orange-700">
+              Sale
+            </span>
+          ) : null}
         </div>
         <button
-          className="mt-4 min-h-11 w-full rounded-full bg-[#0a2540] px-3 text-sm font-black text-white transition hover:bg-[#0e7490]"
+          aria-live="polite"
+          className={`mt-4 min-h-11 w-full rounded-full px-3 text-sm font-black text-white transition ${
+            cartQuantity > 0 || isJustAdded ? "bg-emerald-700" : "bg-[#0a2540] hover:bg-[#0e7490]"
+          }`}
           onClick={() => addToCart(product)}
           type="button"
         >
-          Add to cart
+          {cartQuantity > 0
+            ? `In cart (${cartQuantity}) · Add another`
+            : isJustAdded
+              ? "Added to cart"
+              : "Add to cart"}
         </button>
       </div>
     </article>
@@ -1149,9 +1170,16 @@ function CartDrawer({
         </div>
         <div className="flex-1 space-y-4 overflow-y-auto p-5">
           {cart.length === 0 ? (
-            <p className="rounded-2xl bg-slate-50 p-5 text-sm text-slate-500">
-              Your cart is empty. Add safety gear, hardware or marine accessories to begin.
-            </p>
+            <div className="rounded-2xl bg-slate-50 p-5 text-sm text-slate-600">
+              <p>Your cart is empty. Add safety gear, hardware or marine accessories to begin.</p>
+              <button
+                className="mt-4 min-h-11 rounded-full bg-[#0a2540] px-4 text-sm font-black text-white transition hover:bg-[#0e7490]"
+                onClick={close}
+                type="button"
+              >
+                Continue shopping
+              </button>
+            </div>
           ) : (
             cart.map((line) => (
               <div className="flex gap-3 rounded-2xl border border-slate-200 p-4" key={line.id}>
@@ -1206,7 +1234,7 @@ function CartDrawer({
             <span>{formatAedFromCents(total)}</span>
           </div>
           <p className="mt-2 text-xs text-slate-500">
-            Shipping and quote options are calculated later.
+            Delivery fee and any free-delivery eligibility are confirmed at checkout.
           </p>
           {cart.length === 0 ? (
             <button

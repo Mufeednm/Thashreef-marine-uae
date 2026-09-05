@@ -26,6 +26,8 @@ interface CheckoutPhoneDetails {
   phone: string;
 }
 
+type CheckoutPaymentMethod = "cod" | "ngenius";
+
 const countryDialingCodes = [
   { code: "+971", country: "United Arab Emirates" },
   { code: "+966", country: "Saudi Arabia" },
@@ -77,8 +79,10 @@ const steps = ["Customer", "Delivery", "Review", "Payment"] as const;
 
 export function CheckoutExperience({
   customer,
+  paymentNotice,
 }: {
   customer: { name: string; email: string; phone: string };
+  paymentNotice?: "cancelled" | "verification";
 }): ReactElement {
   const [step, setStep] = useState(0);
   const [lines, setLines] = useState<StoredLine[]>([]);
@@ -101,8 +105,15 @@ export function CheckoutExperience({
     zip: "",
   });
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    paymentNotice === "cancelled"
+      ? "Card payment was not completed. Your basket is still here—review the details and try again when ready."
+      : paymentNotice === "verification"
+        ? "We could not verify the card payment yet. Please do not pay again until you check your order status or try again."
+        : null,
+  );
   const [orderId, setOrderId] = useState<number | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("cod");
   const [detailsSaved, setDetailsSaved] = useState(false);
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -195,24 +206,35 @@ export function CheckoutExperience({
       ]
         .filter(Boolean)
         .join(", ");
-      const response = await fetch("/api/orders", {
+      const checkoutEndpoint =
+        paymentMethod === "ngenius" ? "/api/payments/ngenius/checkout" : "/api/orders";
+      const response = await fetch(checkoutEndpoint, {
           body: JSON.stringify({
             deliveryAddress,
             emirate,
             lines: lines.map((line) => ({ productId: line.id, quantity: line.quantity })),
-            paymentMethod: "cod",
+            ...(paymentMethod === "cod" ? { paymentMethod } : {}),
             phone: formatCheckoutPhone(countryCode, phone),
           }),
           headers: { "Content-Type": "application/json" },
           method: "POST",
         });
       const body = (await response.json().catch(() => ({}))) as {
+        checkoutUrl?: string;
         emailDelivery?: "failed" | "not-configured" | "sent";
         message?: string;
         orderId?: number;
       };
       if (!response.ok) {
         setError(body.message ?? "Your order could not be saved. Please try again.");
+        return;
+      }
+      if (paymentMethod === "ngenius") {
+        if (!body.checkoutUrl) {
+          setError("We could not open secure card payment. Please try again.");
+          return;
+        }
+        window.location.assign(body.checkoutUrl);
         return;
       }
       setEmailDelivery(body.emailDelivery ?? "not-configured");
@@ -273,7 +295,9 @@ export function CheckoutExperience({
               />
             ) : null}
             {step === 2 ? <Review lines={lines} /> : null}
-            {step === 3 ? <Payment /> : null}
+            {step === 3 ? (
+              <Payment paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} />
+            ) : null}
             {error ? (
               <p
                 aria-live="polite"
@@ -311,8 +335,12 @@ export function CheckoutExperience({
               >
                 {step === 3
                   ? submitting
-                    ? "Placing order..."
-                    : "Place order"
+                    ? paymentMethod === "ngenius"
+                      ? "Opening secure payment..."
+                      : "Placing order..."
+                    : paymentMethod === "ngenius"
+                      ? "Pay securely by card"
+                      : "Place order"
                   : "Continue"}
               </button>
             </div>
@@ -638,23 +666,65 @@ function Review({ lines }: { lines: StoredLine[] }): ReactElement {
     </fieldset>
   );
 }
-function Payment(): ReactElement {
+function Payment({
+  paymentMethod,
+  setPaymentMethod,
+}: {
+  paymentMethod: CheckoutPaymentMethod;
+  setPaymentMethod: (value: CheckoutPaymentMethod) => void;
+}): ReactElement {
   return (
     <fieldset>
       <legend className="text-2xl font-black">Payment method</legend>
       <p className="mt-2 text-sm text-slate-500">
-        Cash on Delivery is available for UAE orders.
+        Choose Cash on Delivery for UAE orders or pay securely by card through N-Genius.
       </p>
-      <div className="mt-6 flex gap-3 rounded-2xl border border-[#0e7490] bg-cyan-50 p-4">
-        <input aria-label="Cash on Delivery selected" checked readOnly type="radio" />
-        <span>
-          <b>Cash on Delivery</b>
-          <small className="mt-1 block text-slate-500">Pay when your UAE order arrives.</small>
-        </span>
+      <div className="mt-6 grid gap-3">
+        <label
+          className={`flex cursor-pointer gap-3 rounded-2xl border p-4 transition ${paymentMethod === "cod" ? "border-[#0e7490] bg-cyan-50" : "border-slate-200 bg-white hover:border-cyan-300"}`}
+        >
+          <input
+            checked={paymentMethod === "cod"}
+            name="payment-method"
+            onChange={() => setPaymentMethod("cod")}
+            type="radio"
+            value="cod"
+          />
+          <span>
+            <b>Cash on Delivery</b>
+            <small className="mt-1 block text-slate-500">Pay when your UAE order arrives.</small>
+          </span>
+        </label>
+        <label
+          className={`flex cursor-pointer gap-3 rounded-2xl border p-4 transition ${paymentMethod === "ngenius" ? "border-[#0e7490] bg-cyan-50" : "border-slate-200 bg-white hover:border-cyan-300"}`}
+        >
+          <input
+            checked={paymentMethod === "ngenius"}
+            name="payment-method"
+            onChange={() => setPaymentMethod("ngenius")}
+            type="radio"
+            value="ngenius"
+          />
+          <span>
+            <b>Card payment</b>
+            <small className="mt-1 block text-slate-500">
+              Continue to the secure N-Genius hosted payment page.
+            </small>
+          </span>
+        </label>
       </div>
-      <p className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600" role="status">
-        Online card payment is coming soon. You can place your order now with Cash on Delivery.
-      </p>
+      {paymentMethod === "ngenius" ? (
+        <p
+          className="mt-3 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm leading-6 text-cyan-950"
+          role="status"
+        >
+          Your card details are entered securely on N-Genius and are not stored by Marsa Edge Marine.
+        </p>
+      ) : (
+        <p className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
+          Cash on Delivery is available for UAE orders.
+        </p>
+      )}
     </fieldset>
   );
 }

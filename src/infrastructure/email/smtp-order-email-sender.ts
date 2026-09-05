@@ -5,6 +5,7 @@ import { getServerEnvironment } from "@/config/env";
 import { formatAedFromCents } from "@/shared/utils/currency";
 
 export type OrderEmailDelivery = "sent" | "not-configured";
+export type OrderStatus = "accepted" | "rejected";
 
 export async function sendOrderConfirmationEmail(
   order: AdminOrderDetail,
@@ -26,6 +27,49 @@ export async function sendOrderConfirmationEmail(
     html: buildOrderEmailHtml(order),
     subject: `We received your Marsa Edge Marine order request #${order.id}`,
     text: buildOrderEmailText(order),
+    to: order.customerEmail,
+  });
+
+  return "sent";
+}
+
+export async function sendOrderStatusEmail(
+  order: AdminOrderDetail,
+  status: OrderStatus,
+): Promise<OrderEmailDelivery> {
+  const environment = getServerEnvironment();
+  const smtpConfiguration = getSmtpConfiguration(environment);
+
+  if (!smtpConfiguration) return "not-configured";
+
+  const isAccepted = status === "accepted";
+  const heading = isAccepted ? "Order accepted" : "Order update";
+  const message = isAccepted
+    ? "Your order has been accepted. Our marine team will now prepare the next delivery or collection update."
+    : "We are sorry, but we cannot accept this order at the moment. Please contact us if you would like help finding an alternative.";
+  const actionLine = isAccepted
+    ? "We will email or contact you with the next delivery update."
+    : "Our team can help with alternatives, availability, or a new order request.";
+  const transporter = nodemailer.createTransport({
+    auth: { pass: smtpConfiguration.password, user: smtpConfiguration.user },
+    host: smtpConfiguration.host,
+    port: smtpConfiguration.port,
+    secure: smtpConfiguration.port === 465,
+  });
+
+  await transporter.sendMail({
+    from: smtpConfiguration.from,
+    html: `<!doctype html><html><body style="margin:0;background:#f4f8fa;font-family:Arial,sans-serif;color:#0a2540"><main style="max-width:620px;margin:24px auto;background:#ffffff;border-radius:20px;overflow:hidden"><header style="padding:28px 32px;background:#071827;color:#ffffff"><p style="margin:0;color:#67e8f9;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">Marsa Edge Marine LLC</p><h1 style="margin:12px 0 0;font-size:28px">${heading}</h1></header><section style="padding:30px 32px"><p>Hello ${escapeHtml(order.customerName)},</p><p>${escapeHtml(message)}</p><p>Order <strong>#${order.id}</strong> · <strong>${escapeHtml(formatAedFromCents(order.totalAedCents))}</strong></p><p>${escapeHtml(actionLine)}</p></section><footer style="padding:20px 32px;background:#f8fafc;color:#475569;font-size:14px">Marsa Edge Marine LLC<br />Dubai · Al Jaddaf · Drydocks</footer></main></body></html>`,
+    subject: `${isAccepted ? "Order accepted" : "Order update"} — Marsa Edge Marine order #${order.id}`,
+    text: [
+      `Hello ${order.customerName},`,
+      "",
+      message,
+      `Order #${order.id}: ${formatAedFromCents(order.totalAedCents)}`,
+      actionLine,
+      "",
+      "Marsa Edge Marine LLC",
+    ].join("\n"),
     to: order.customerEmail,
   });
 

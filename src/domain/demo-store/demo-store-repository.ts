@@ -165,7 +165,7 @@ export interface DemoStoreRepository {
   attachNgeniusOrderReference(id: number, reference: string): Promise<boolean>;
   findOrderByNgeniusReference(reference: string): Promise<AdminOrderDetail | null>;
   markNgeniusOrderPaid(id: number, reference: string): Promise<boolean>;
-  updateOrderStatus(id: number, status: "accepted" | "rejected"): Promise<void>;
+  updateOrderStatus(id: number, status: "accepted" | "rejected"): Promise<boolean>;
   updateBrand(id: number, input: Omit<Brand, "id" | "slug">): Promise<Brand | null>;
   updateCategory(
     id: number,

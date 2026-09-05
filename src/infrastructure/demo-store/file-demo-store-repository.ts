@@ -1003,11 +1003,15 @@ class SqliteDemoStoreRepository implements DemoStoreRepository {
     );
   }
 
-  async updateOrderStatus(id: number, status: "accepted" | "rejected"): Promise<void> {
+  async updateOrderStatus(id: number, status: "accepted" | "rejected"): Promise<boolean> {
     await ensureDatabase();
-    await getDatabaseConnection().query("UPDATE orders SET status = :status WHERE id = :id", {
+    const [result, metadata] = await getDatabaseConnection().query(
+      "UPDATE orders SET status = :status WHERE id = :id AND status = 'new'",
+      {
       replacements: { id, status },
-    });
+      },
+    );
+    return affectedRows(result) > 0 || affectedRows(metadata) > 0;
   }
 
   async attachNgeniusOrderReference(id: number, reference: string): Promise<boolean> {

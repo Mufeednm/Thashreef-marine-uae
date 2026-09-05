@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ReactElement } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import type { Product } from "@/domain/catalog/product";
 import { useLocale } from "@/features/i18n/locale-provider";
+import { Footer } from "@/features/storefront/components/storefront-experience";
 import { ProductImage } from "@/features/storefront/components/product-image";
 import { formatAedFromCents } from "@/shared/utils/currency";
 
@@ -17,7 +18,7 @@ export function ProductDetailPage({
   relatedProducts: Product[];
 }): ReactElement {
   const { locale } = useLocale();
-  const [added, setAdded] = useState(false);
+  const [cartQuantity, setCartQuantity] = useState(0);
   const galleryImages = [
     product.imageUrl,
     product.secondaryImageUrl,
@@ -27,6 +28,20 @@ export function ProductDetailPage({
   const hasSale = product.salePriceAedCents !== null && product.salePriceAedCents !== undefined;
   const name = localizedProductName(product, locale);
   const description = localizedProductDescription(product, locale);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        const storedCart = JSON.parse(
+          window.sessionStorage.getItem("thashreef-cart") ?? "[]",
+        ) as CartLine[];
+        setCartQuantity(storedCart.find((line) => line.id === product.id)?.quantity ?? 0);
+      } catch {
+        setCartQuantity(0);
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [product.id]);
 
   function addToCart(): void {
     const storedCart = window.sessionStorage.getItem("thashreef-cart");
@@ -43,7 +58,7 @@ export function ProductDetailPage({
         )
       : [...cart, { ...product, quantity: 1 }];
     window.sessionStorage.setItem("thashreef-cart", JSON.stringify(nextCart));
-    setAdded(true);
+    setCartQuantity(existing ? existing.quantity + 1 : 1);
   }
 
   return (
@@ -136,14 +151,16 @@ export function ProductDetailPage({
               onClick={addToCart}
               type="button"
             >
-              {added ? "Added to cart" : "Add to cart"}
+              {cartQuantity > 0
+                ? `In cart (${cartQuantity}) · Add another`
+                : "Add to cart"}
             </button>
-            {added ? (
+            {cartQuantity > 0 ? (
               <div
                 aria-live="polite"
                 className="mt-3 flex items-center justify-between rounded-xl bg-sky-50 px-4 py-3 text-sm font-bold text-[#0e568f]"
               >
-                <span>Added to your cart.</span>
+                <span>{cartQuantity} item{cartQuantity === 1 ? "" : "s"} in your cart.</span>
                 <Link className="underline underline-offset-4" href="/checkout">
                   Go to checkout
                 </Link>
@@ -156,7 +173,8 @@ export function ProductDetailPage({
             </div>
           </div>
         </article>
-        <section className="mt-12" aria-labelledby="related-products-heading">
+        {relatedProducts.length > 0 ? (
+          <section className="mt-12" aria-labelledby="related-products-heading">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="text-xs font-black tracking-[0.2em] text-[#0e7490] uppercase">
@@ -173,19 +191,15 @@ export function ProductDetailPage({
               Browse all products
             </Link>
           </div>
-          {relatedProducts.length > 0 ? (
             <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {relatedProducts.map((related) => (
                 <RelatedProductCard key={related.id} product={related} />
               ))}
             </div>
-          ) : (
-            <p className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
-              More products in this category will appear here as the catalog grows.
-            </p>
-          )}
-        </section>
+          </section>
+        ) : null}
       </div>
+      <Footer />
     </main>
   );
 }

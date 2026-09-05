@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // N-Genius sandbox accepts 127.0.0.1 for its local hosted-payment return URL.
+  // Allow this alternate local origin to load Next.js development resources as well.
+  allowedDevOrigins: ["127.0.0.1"],
   devIndicators: false,
   experimental: {
     serverActions: {

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Remove the redundant storefront status strip, reduce repeated homepage product rails, add customer-facing catalogue sorting, improve add-to-cart confirmation, provide mobile search, and clarify cart delivery messaging.
+- Keep cart quantity visible on product cards and product detail pages, and omit the related-products section when no related product exists.
+- Render the shared customer-support footer on product-detail pages.
+- Return customers to checkout with a clear recovery message when N-Genius card payment is cancelled, incomplete, or cannot yet be verified, instead of showing a 404 page.
+- Send an SMTP email when an administrator accepts or rejects a new customer order, without sending duplicate status notifications on repeat actions.
+- Restore N-Genius hosted card checkout alongside Cash on Delivery now that the sandbox outlet is configured and verified.
+- Use the N-Genius-supported `127.0.0.1` local return URL and allow it as a Next.js development origin so sandbox payment return and customer session cookies share one host.
 - Remove the redundant merchant-workspace status strip from administrator pages.
 - Temporarily hide online card payment in checkout and show it as coming soon while the N-Genius sandbox outlet is provisioned.
 - Replace Stripe Checkout with N-Genius Online hosted card payment, server-side return verification, and a secret-header-protected N-Genius webhook endpoint.

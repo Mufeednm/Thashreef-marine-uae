@@ -10,7 +10,7 @@ import { retrieveNgeniusOrder } from "@/infrastructure/payments/ngenius-client";
 export default async function NgeniusCheckoutSuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ order_id?: string }>;
+  searchParams: Promise<{ order_id?: string; ref?: string }>;
 }): Promise<ReactElement> {
   const orderId = Number((await searchParams).order_id);
   if (!Number.isSafeInteger(orderId) || orderId < 1) notFound();
@@ -23,9 +23,15 @@ export default async function NgeniusCheckoutSuccessPage({
   if (!order || order.customerEmail.trim().toLowerCase() !== user.email.trim().toLowerCase() || !order.paymentReference) {
     notFound();
   }
-  try { await completeNgeniusOrder(orderId, await retrieveNgeniusOrder(order.paymentReference)); } catch { notFound(); }
+  try {
+    await completeNgeniusOrder(orderId, await retrieveNgeniusOrder(order.paymentReference));
+  } catch {
+    redirect("/checkout?ngenius=verification");
+  }
   const completedOrder = await repository.getOrderDetail(orderId);
-  if (!completedOrder || completedOrder.paymentStatus !== "paid") notFound();
+  if (!completedOrder || completedOrder.paymentStatus !== "paid") {
+    redirect("/checkout?ngenius=cancelled");
+  }
   return (
     <NgeniusCheckoutSuccess
       customerName={user.name}

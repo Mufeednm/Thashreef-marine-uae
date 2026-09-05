@@ -1,5 +1,19 @@
 # Decision Log
 
+## 2026-09-05 — Keep storefront discovery focused and responsive
+
+The storefront now removes the redundant status strip and avoids repeating the same catalogue items across several homepage rails. Customers can sort the full catalogue by featured order, newest, or price, receive visible and screen-reader add-to-cart confirmation, and search directly from the mobile header. The cart now accurately explains that delivery pricing is confirmed in checkout rather than implying it is calculated later.
+
+Product cards and the product detail page retain the quantity already placed in the cart and make the next action explicit: add another or continue to checkout. Related-product UI is intentionally absent when no matching product exists, instead of displaying a speculative empty-state message.
+
+## 2026-09-05 — Treat incomplete card-payment returns as recoverable checkout states
+
+N-Genius can return a customer to the configured success URL with an order that is not yet `PURCHASED`, such as after abandoning or navigating back from hosted payment. The success route now returns those customers to checkout with a clear, non-destructive recovery message instead of masking the state with a 404. A genuine payment is still verified server-side before the paid confirmation is shown.
+
+## 2026-09-05 — Notify customers once when an order is accepted or rejected
+
+The administrator status action now changes only orders still marked `new`. After that single successful state transition, it sends the customer an SMTP email tailored to acceptance or rejection. Email-delivery failure is logged but does not undo the authorised order decision.
+
 ## 2026-09-01 — Remove the duplicate administrator status strip
 
 The merchant-workspace status strip added no useful control or page context and duplicated information already available within the administrator workspace. It has been removed, while the primary administration header, navigation, and logout action remain unchanged.
@@ -578,3 +592,14 @@ Render's Node 24 build image selected a prebuilt `sqlite3` binary requiring GLIB
 - **Reason:** Social login, MFA, recovery, roles, and user-data requirements need confirmation.
 - **Alternatives:** Custom JWT authentication or a hosted identity provider.
 - **Impact:** The identity milestone must add secure sessions, password hashing, CSRF protections, and authorization policies.
+## 2026-09-03 - Re-enable N-Genius card checkout
+
+- **Decision:** Present Cash on Delivery and N-Genius hosted card payment as explicit checkout choices, using the existing server-side N-Genius checkout route for card orders.
+- **Reason:** The sandbox outlet and service account were verified, so hiding the already implemented hosted-payment flow prevents required integration testing.
+- **Impact:** Card customers are redirected to N-Genius after server-side totals and order creation. The browser never receives the N-Genius API key, and Cash on Delivery remains available.
+
+## 2026-09-03 - Use `127.0.0.1` for N-Genius local returns
+
+- **Decision:** Use `http://127.0.0.1:3000` as the local N-Genius return origin and explicitly allow it through Next.js `allowedDevOrigins`.
+- **Reason:** N-Genius sandbox accepted the `127.0.0.1` return URL but rejected `localhost`; a matching origin is also required for the browser's customer session cookie to be present on the success page.
+- **Impact:** Local payment testing must start and finish at `127.0.0.1:3000`. This setting applies only in Next.js development mode.
